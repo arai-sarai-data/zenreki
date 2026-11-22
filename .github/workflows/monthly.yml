@@ -1,0 +1,41 @@
+name: 毎月の前歴ランキング
+
+# 毎月1日 9:30（日本時間）に、その月のお題で全国の前歴ランキングを作り直す。
+# 手動で動かすときは「お題」に station / municipality / mall / univ / castle / stadium / leisure / shrine / temple / all を入れる。
+on:
+  schedule:
+    - cron: "30 0 1 * *"
+  workflow_dispatch:
+    inputs:
+      theme:
+        description: "お題（auto=今月の順番、all=全部、カンマ区切りで複数可）"
+        default: "auto"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ranking
+  cancel-in-progress: false
+
+jobs:
+  rank:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-save --no-package-lock pngjs@7
+      - name: ランキングを作る
+        env:
+          THEME: ${{ github.event.inputs.theme || 'auto' }}
+        run: node tools/rank.mjs "$THEME"
+      - name: 結果を保存する
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add rankings
+          git diff --cached --quiet || git commit -m "前歴ランキングを更新（$(date -u +%Y-%m-%d)）"
+          git push
