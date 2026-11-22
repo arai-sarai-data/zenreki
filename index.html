@@ -152,6 +152,20 @@ footer p{margin:0 0 8px}
 .rcol .more{font:inherit;font-size:13px;margin-top:6px;background:none;border:1px solid var(--ink);padding:2px 10px;cursor:pointer}
 .rcol .pb{grid-column:2;display:block;height:6px;background:#e6e0d0;margin:2px 0 2px}
 .rcol .pb i{display:block;height:100%;background:var(--shu)}
+.quiz{display:grid;grid-template-columns:minmax(0,360px) 1fr;gap:18px;align-items:start}
+.quiz .qimg{position:relative;border:2px solid var(--ink);background:#ddd8ca;aspect-ratio:1}
+.quiz .qimg canvas{display:block;width:100%;height:100%}
+.quiz .qimg span{position:absolute;left:8px;top:8px;background:var(--ink);color:#fff;font-size:12px;padding:2px 8px}
+.quiz .qq{font-family:var(--mincho);font-weight:800;font-size:22px;margin:0 0 10px}
+.quiz .qc{display:grid;gap:8px}
+.quiz .qc button{font:inherit;font-size:16px;font-weight:700;text-align:left;padding:10px 14px;border:2px solid var(--ink);background:var(--card);color:var(--ink);cursor:pointer}
+.quiz .qc button.ok{background:#2c6b3f;color:#fff;border-color:#2c6b3f}
+.quiz .qc button.ng{background:var(--shu);color:#fff;border-color:var(--shu)}
+.quiz .qr{margin-top:12px;font-size:15px;min-height:3em}
+.quiz .qr b{font-family:var(--mincho);font-size:20px}
+.quiz .qbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.quiz .qbar button,.quiz .qbar a{font:inherit;font-size:14px;font-weight:700;padding:8px 14px;border:2px solid var(--ink);background:var(--ink);color:#fff;text-decoration:none;cursor:pointer}
+@media (max-width:640px){.quiz{grid-template-columns:1fr}}
 .modal{position:fixed;inset:0;background:rgba(27,26,23,.72);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
 .modal.on{display:flex}
 .modal .box{background:var(--paper);border:2px solid var(--ink);max-width:760px;width:100%;padding:14px}
@@ -235,6 +249,20 @@ footer p{margin:0 0 8px}
     <div class="rgrid" id="rgrid"></div>
     <div class="share"><a id="rshare" href="#" target="_blank" rel="noopener">このランキングをポスト</a></div>
     <p class="d">場所はWikidataから、有名な順（Wikipediaの記事がある言語の数）に選んでいます。判定はこのサイトの前歴書と同じく、国土地理院とハザードマップポータルのデータによります。</p>
+  </section>
+
+  <section class="blk" id="quiz" hidden>
+    <h3>この空中写真、どこ？</h3>
+    <p class="d">終戦直後（1945〜50年）に米軍が撮った空中写真です。いまの有名な場所のどれでしょう。</p>
+    <div class="quiz">
+      <div class="qimg" id="qimg"><span>昭和20年代</span></div>
+      <div>
+        <p class="qq" id="qq"></p>
+        <div class="qc" id="qc"></div>
+        <div class="qr" id="qres"></div>
+        <div class="qbar"><button type="button" id="qnext">次の問題</button><a id="qshare" href="#" target="_blank" rel="noopener">成績をポスト</a></div>
+      </div>
+    </div>
   </section>
 
   <section class="blk" id="compare">
@@ -772,10 +800,13 @@ async function showRank(k){
     ["洪水で深く浸かる","想定最大規模",it.filter(x=>x.f>=0).sort((a,b)=>b.f-a.f||(a.e??99)-(b.e??99)),x=>x.fl],
     ["昔から台地","地盤が強い側",it.filter(x=>x.s==="台地").sort(fame),x=>"海抜 "+(x.e==null?"?":x.e.toFixed(1)+"m")]
   ];
+  const nc=nameCheck(it);
+  L.push(["名前は水っぽいのに高台","沼・池・谷・島・田などの字があるのに",nc.liar,x=>x.w||x.s],["名前は普通なのに元・水の底","地名に水の字がないのに",nc.hidden,x=>x.w]);
   const prefs=Object.entries(s.byPref||{}).filter(([p,b])=>b.n>=5).map(([p,b])=>({p,pct:Math.round(b.wet/b.n*100),n:b.n})).sort((a,b)=>b.pct-a.pct);
   const li=(x,j,f)=>`<li${j>=10?' class="x"':""}><button type="button" data-la="${x.la}" data-lo="${x.lo}">${esc(x.n)}</button><small>${esc((x.p||"")+(x.c||""))}　${esc(f(x)||"")}</small></li>`;
   $("#rgrid").innerHTML=L.filter(l=>l[2].length).map(([t,sub,arr,f])=>`<div class="rcol"><h4>${t}<small>${sub}</small></h4><ol>${arr.slice(0,30).map((x,j)=>li(x,j,f)).join("")}</ol>${arr.length>10?'<button type="button" class="more">もっと見る</button>':""}</div>`).join("")
     +(prefs.length?`<div class="rcol"><h4>都道府県別<small>水・田・湿地だった割合</small></h4><ol>${prefs.slice(0,15).map(x=>`<li><b>${esc(x.p)}</b><small>${x.pct}%（${x.n}か所中）</small><span class="pb"><i style="width:${x.pct}%"></i></span></li>`).join("")}</ol></div>`:"");
+  initQuiz(it,k);
   const sea=it.filter(x=>SEA_S.has(x.s)).sort(fame).slice(0,3).map(x=>x.n);
   const txt=`【土地の前歴】${d.lead}${s.known}か所を調べたら、${s.wetPct}%が明治のころ「水・田んぼ・湿地」でした。`+(sea.length?`\n元・水の底：${sea.join("、")}`:"")+"\n";
   $("#rshare").href="https://x.com/intent/post?text="+encodeURIComponent(txt)+"&url="+encodeURIComponent(location.origin+location.pathname+"#rank-"+k)+"&hashtags="+encodeURIComponent(SITE_TAG);
@@ -784,6 +815,73 @@ document.addEventListener("click",e=>{
   const m=e.target.closest(".rcol .more");if(m){m.previousElementSibling.classList.add("all");m.remove();return}
   const b=e.target.closest(".rcol button[data-la]");if(b)lookup(+b.dataset.la,+b.dataset.lo);
 });
+
+// ---------- 1945年クイズ ----------
+async function cropOld(lat,lon,W,H,layers){
+  for(const [L,cap,ext] of layers||[["ort_USA10","昭和20年代","png"]]){
+    const z=16,[fx,fy]=tileXY(lat,lon,z),tx=Math.floor(fx),ty=Math.floor(fy);
+    const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
+    const cx=(fx-tx)*256,cy=(fy-ty)*256;let got=0;
+    await Promise.all([-1,0,1].flatMap(dy=>[-1,0,1].map(async dx=>{
+      const t=await loadTile(`${GSI}${L}/${z}/${tx+dx}/${ty+dy}.${ext}`);if(!t)return;got++;
+      x.drawImage(t.bm,W/2-cx+dx*256,H/2-cy+dy*256);})));
+    if(got<7)continue;
+    const p=x.getImageData(0,0,W,H).data;let blank=0,dark=0;
+    for(let i=0;i<p.length;i+=400){if(p[i+3]===0)blank++;else if(p[i]+p[i+1]+p[i+2]<30)dark++}
+    if((blank+dark)>p.length/400*0.1)continue;
+    return {c,cap};
+  }
+  return null;
+}
+const QZ={pool:[],n:0,ok:0,cur:null,lock:false,key:null};
+async function initQuiz(items,key){
+  QZ.pool=items.filter(x=>x.la&&x.lo).slice(0,400);QZ.key=key;
+  if(QZ.pool.length<8)return;
+  $("#quiz").hidden=false;
+  if(!QZ.cur)nextQuiz();
+  if(location.hash==="#quiz")$("#quiz").scrollIntoView();
+}
+async function nextQuiz(){
+  if(QZ.lock)return;QZ.lock=true;
+  $("#qres").textContent="";$("#qc").innerHTML="";$("#qq").textContent="写真を用意しています…";
+  const box=$("#qimg");box.querySelector("canvas")?.remove();
+  for(let tries=0;tries<12;tries++){
+    const a=QZ.pool[Math.floor(Math.random()*QZ.pool.length)];
+    const r=await cropOld(a.la,a.lo,480,480);
+    if(!r)continue;
+    const same=QZ.pool.filter(x=>x!==a&&x.p===a.p&&x.n!==a.n),other=QZ.pool.filter(x=>x!==a&&x.n!==a.n);
+    const pick=[];const src=same.length>=3?same:other;
+    while(pick.length<3){const c=src[Math.floor(Math.random()*src.length)];if(!pick.includes(c)&&c.n!==a.n)pick.push(c)}
+    const ch=[a,...pick].sort(()=>Math.random()-.5);
+    QZ.cur={a,ch};box.prepend(r.c);
+    $("#qq").textContent=`第${QZ.n+1}問　ここは、いまのどこ？`;
+    $("#qc").innerHTML=ch.map((x,i)=>`<button type="button" data-i="${i}">${esc(x.n)}<small style="font-weight:400;color:var(--sub);margin-left:8px">${esc(x.p||"")}</small></button>`).join("");
+    QZ.lock=false;return;
+  }
+  $("#qq").textContent="写真が見つかりませんでした。もう一度お試しください。";QZ.lock=false;
+}
+function answerQuiz(i){
+  const q=QZ.cur;if(!q||q.done)return;q.done=true;QZ.n++;
+  const right=q.ch[i]===q.a;if(right)QZ.ok++;
+  $("#qc").querySelectorAll("button").forEach((b,j)=>{if(q.ch[j]===q.a)b.classList.add("ok");else if(j===i)b.classList.add("ng");b.disabled=true});
+  $("#qres").innerHTML=`<b>${right?"正解":"はずれ"}</b>　答えは${esc(q.a.n)}（${esc(q.a.p||"")}）。前歴は「${esc(q.a.w||"記録なし")}」。<button type="button" class="more" data-goto="1">前歴書を見る</button><br>${QZ.n}問中${QZ.ok}問正解`;
+  const txt=`終戦直後の空中写真を見て、いまのどこか当てるクイズ。${QZ.n}問中${QZ.ok}問正解でした。\n`;
+  $("#qshare").href="https://x.com/intent/post?text="+encodeURIComponent(txt)+"&url="+encodeURIComponent(location.origin+location.pathname+"#quiz")+"&hashtags="+encodeURIComponent(SITE_TAG);
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("#qc button");if(b){answerQuiz(+b.dataset.i);return}
+  if(e.target.closest("#qnext")){nextQuiz();return}
+  if(e.target.closest("[data-goto]")&&QZ.cur){lookup(QZ.cur.a.la,QZ.cur.a.lo)}
+});
+// ---------- 地名の答え合わせ ----------
+const WATERK=/[沼池窪谷島洲浜田川沢潟江津湊浦堀瀬]/;
+function nameCheck(it){
+  const fame=(a,b)=>b.sl-a.sl;
+  const liar=it.filter(x=>WATERK.test(x.n)&&["台地","斜面","切土","扇状地","微高地"].includes(x.s)).sort(fame);
+  const hidden=it.filter(x=>!WATERK.test(x.n)&&SEA_S.has(x.s)).sort(fame);
+  const honest=it.filter(x=>WATERK.test(x.n)&&WET_S.has(x.s)).sort(fame);
+  return {liar,hidden,honest};
+}
 
 /* ---------- 起動 ---------- */
 async function search(q){
