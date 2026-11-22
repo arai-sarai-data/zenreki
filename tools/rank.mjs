@@ -173,9 +173,10 @@ for (const th of targets) {
   try {
     const d = await runTheme(th);
     index.themes[th.key] = { title: th.title, lead: th.lead, updated: d.updated, total: d.stats.known, wetPct: d.stats.wetPct, seaPct: d.stats.seaPct };
-    index.latest = th.key;
+    if (arg === "auto" || !index.latest) index.latest = th.key;
   } catch (e) { console.error(`× ${th.title} は失敗しました：`, e); process.exitCode = 1; }
 }
+if (arg === "all") index.latest = THEMES[0].key;
 index.order = THEMES.map(t => t.key).filter(k => index.themes[k]);
 index.next = THEMES[(new Date().getUTCFullYear() * 12 + new Date().getUTCMonth() + 1) % THEMES.length].title;
 fs.mkdirSync(ROOT + "rankings", { recursive: true });
