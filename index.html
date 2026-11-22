@@ -128,6 +128,30 @@ footer{border-top:3px double var(--ink);margin-top:48px;padding:20px 0 40px;font
 footer p{margin:0 0 8px}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
 .toast.on{opacity:1}
+#rank .rtabs{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 16px}
+#rank .rtabs button{font:inherit;font-size:14px;border:2px solid var(--ink);background:transparent;color:var(--ink);padding:4px 12px;cursor:pointer}
+#rank .rtabs button.on{background:var(--ink);color:#fff}
+#rank .rtabs em{font-style:normal;font-size:11px;background:var(--shu);color:#fff;padding:0 5px;margin-left:6px;vertical-align:2px}
+#rank h3 small{font-family:var(--goth);font-weight:400;font-size:12px;color:var(--sub);margin-left:10px}
+.rhead .big{font-family:var(--mincho);font-weight:800;font-size:clamp(22px,4.4vw,36px);line-height:1.45}
+.rhead .big em{font-style:normal;color:var(--shu)}
+.rhead .big b{font-size:1.15em}
+.rhead .sub{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;margin:8px 0 18px;color:var(--sub)}
+.rhead .sub b{color:var(--ink);font-family:var(--mincho);font-size:20px}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.rcol{background:var(--card);border:2px solid var(--ink);padding:10px 12px}
+.rcol h4{font-family:var(--mincho);font-weight:800;font-size:19px;margin:0 0 6px;border-bottom:1px solid var(--ink);padding-bottom:4px}
+.rcol h4 small{font-family:var(--goth);font-weight:400;font-size:11px;color:var(--sub);margin-left:8px}
+.rcol ol{margin:0;padding:0;list-style:none;counter-reset:r}
+.rcol li{counter-increment:r;display:grid;grid-template-columns:28px 1fr;align-items:baseline;padding:3px 0;border-bottom:1px dashed var(--hair);font-size:14px}
+.rcol li::before{content:counter(r);font-family:var(--mincho);font-weight:800;color:var(--shu);font-size:16px}
+.rcol li small{grid-column:2;font-size:11.5px;color:var(--sub)}
+.rcol li button{font:inherit;font-weight:700;background:none;border:0;padding:0;color:var(--ink);text-align:left;cursor:pointer;text-decoration:underline;text-decoration-color:var(--hair);text-underline-offset:3px}
+.rcol li.x{display:none}
+.rcol ol.all li.x{display:grid}
+.rcol .more{font:inherit;font-size:13px;margin-top:6px;background:none;border:1px solid var(--ink);padding:2px 10px;cursor:pointer}
+.rcol .pb{grid-column:2;display:block;height:6px;background:#e6e0d0;margin:2px 0 2px}
+.rcol .pb i{display:block;height:100%;background:var(--shu)}
 .modal{position:fixed;inset:0;background:rgba(27,26,23,.72);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
 .modal.on{display:flex}
 .modal .box{background:var(--paper);border:2px solid var(--ink);max-width:760px;width:100%;padding:14px}
@@ -154,7 +178,7 @@ footer p{margin:0 0 8px}
 <body>
 <header class="mast"><div class="wrap">
   <a class="logo" href="./">土地の前歴<small>住所で洗いざらい</small></a>
-  <nav><a href="#compare">今昔くらべ</a><a href="#walk">散歩ログ</a><a href="https://x.com/arai_sarai_data" target="_blank" rel="noopener">@arai_sarai_data</a></nav>
+  <nav><a href="#rank">ランキング</a><a href="#compare">今昔くらべ</a><a href="#walk">散歩ログ</a><a href="https://x.com/arai_sarai_data" target="_blank" rel="noopener">@arai_sarai_data</a></nav>
 </div></header>
 
 <main class="wrap">
@@ -201,6 +225,16 @@ footer p{margin:0 0 8px}
       <div class="memo"><div class="k">地盤からひとこと（国土地理院の解説より）</div><p id="sMemo"></p></div>
       <div class="stamp" id="stamp"><span class="s1">前歴</span><span class="s2" id="stampTxt"></span></div>
     </div>
+  </section>
+
+  <section class="blk" id="rank" hidden>
+    <h3>前歴ランキング<small id="rupd"></small></h3>
+    <p class="d">毎月1日に、新しいお題で全国を調べ直しています。<span id="rnext"></span>名前を押すと、その場所の前歴書が出ます。</p>
+    <div class="rtabs" id="rtabs"></div>
+    <div class="rhead" id="rhead"></div>
+    <div class="rgrid" id="rgrid"></div>
+    <div class="share"><a id="rshare" href="#" target="_blank" rel="noopener">このランキングをポスト</a></div>
+    <p class="d">場所はWikidataから、有名な順（Wikipediaの記事がある言語の数）に選んでいます。判定はこのサイトの前歴書と同じく、国土地理院とハザードマップポータルのデータによります。</p>
   </section>
 
   <section class="blk" id="compare">
@@ -708,6 +742,49 @@ $("#makeCard").addEventListener("click",makeCard);
 $("#cardClose").addEventListener("click",()=>$("#modal").classList.remove("on"));
 $("#modal").addEventListener("click",e=>{if(e.target.id==="modal")$("#modal").classList.remove("on")});
 
+// ---------- 前歴ランキング ----------
+const RANK_BASE=window.RANK_BASE||"rankings/";
+const SEA_S=new Set(["水底","干拓","旧河道","水面","干潟"]),WET_S=new Set([...SEA_S,"田圃","湿地","塩田"]);
+let RIDX=null;
+async function initRank(){
+  try{RIDX=await (await fetch(RANK_BASE+"index.json",{cache:"no-cache"})).json()}catch(e){return}
+  if(!RIDX||!RIDX.order||!RIDX.order.length)return;
+  $("#rank").hidden=false;
+  $("#rnext").textContent=RIDX.next?`来月のお題は「${RIDX.next}」。`:"";
+  $("#rtabs").innerHTML=RIDX.order.map(k=>`<button type="button" data-rk="${k}">${esc(RIDX.themes[k].title)}${k===RIDX.latest?"<em>今月</em>":""}</button>`).join("");
+  $("#rtabs").addEventListener("click",e=>{const b=e.target.closest("[data-rk]");if(!b)return;showRank(b.dataset.rk);history.replaceState(null,"",location.pathname+location.search+"#rank-"+b.dataset.rk)});
+  const m=location.hash.match(/^#rank-([a-z]+)/);
+  await showRank(m&&RIDX.themes[m[1]]?m[1]:RIDX.latest);
+  if(m)$("#rank").scrollIntoView();
+}
+async function showRank(k){
+  document.querySelectorAll("#rtabs button").forEach(b=>b.classList.toggle("on",b.dataset.rk===k));
+  $("#rgrid").innerHTML=`<p class="d">読み込み中…</p>`;
+  let d;try{d=await (await fetch(RANK_BASE+k+".json",{cache:"no-cache"})).json()}catch(e){$("#rgrid").innerHTML="";return}
+  const s=d.stats,it=d.items,fame=(a,b)=>b.sl-a.sl;
+  $("#rupd").textContent=d.updated.replace(/-/g,".")+" 更新";
+  $("#rhead").innerHTML=`<div class="big">${esc(d.lead)} <b>${s.known.toLocaleString()}</b> か所のうち、<br><em>${s.wetPct}%</em> は明治のころ<em>水・田んぼ・湿地</em>でした。</div>
+    <div class="sub"><span>元・水の底 <b>${s.sea}</b></span><span>海抜0m以下 <b>${s.below0}</b></span><span>洪水で3m以上浸かる想定 <b>${s.flood3}</b></span></div>`;
+  const L=[
+    ["元・水の底","埋め立て・干拓・旧河道など",it.filter(x=>SEA_S.has(x.s)).sort(fame),x=>x.w],
+    ["元・田んぼ・湿地","明治の地図で田・湿地",it.filter(x=>WET_S.has(x.s)&&!SEA_S.has(x.s)).sort(fame),x=>x.m||x.w],
+    ["海抜が低い","いまの標高",it.filter(x=>x.e!=null).sort((a,b)=>a.e-b.e),x=>"海抜 "+x.e.toFixed(1)+"m"],
+    ["洪水で深く浸かる","想定最大規模",it.filter(x=>x.f>=0).sort((a,b)=>b.f-a.f||(a.e??99)-(b.e??99)),x=>x.fl],
+    ["昔から台地","地盤が強い側",it.filter(x=>x.s==="台地").sort(fame),x=>"海抜 "+(x.e==null?"?":x.e.toFixed(1)+"m")]
+  ];
+  const prefs=Object.entries(s.byPref||{}).filter(([p,b])=>b.n>=5).map(([p,b])=>({p,pct:Math.round(b.wet/b.n*100),n:b.n})).sort((a,b)=>b.pct-a.pct);
+  const li=(x,j,f)=>`<li${j>=10?' class="x"':""}><button type="button" data-la="${x.la}" data-lo="${x.lo}">${esc(x.n)}</button><small>${esc((x.p||"")+(x.c||""))}　${esc(f(x)||"")}</small></li>`;
+  $("#rgrid").innerHTML=L.filter(l=>l[2].length).map(([t,sub,arr,f])=>`<div class="rcol"><h4>${t}<small>${sub}</small></h4><ol>${arr.slice(0,30).map((x,j)=>li(x,j,f)).join("")}</ol>${arr.length>10?'<button type="button" class="more">もっと見る</button>':""}</div>`).join("")
+    +(prefs.length?`<div class="rcol"><h4>都道府県別<small>水・田・湿地だった割合</small></h4><ol>${prefs.slice(0,15).map(x=>`<li><b>${esc(x.p)}</b><small>${x.pct}%（${x.n}か所中）</small><span class="pb"><i style="width:${x.pct}%"></i></span></li>`).join("")}</ol></div>`:"");
+  const sea=it.filter(x=>SEA_S.has(x.s)).sort(fame).slice(0,3).map(x=>x.n);
+  const txt=`【土地の前歴】${d.lead}${s.known}か所を調べたら、${s.wetPct}%が明治のころ「水・田んぼ・湿地」でした。`+(sea.length?`\n元・水の底：${sea.join("、")}`:"")+"\n";
+  $("#rshare").href="https://x.com/intent/post?text="+encodeURIComponent(txt)+"&url="+encodeURIComponent(location.origin+location.pathname+"#rank-"+k)+"&hashtags="+encodeURIComponent(SITE_TAG);
+}
+document.addEventListener("click",e=>{
+  const m=e.target.closest(".rcol .more");if(m){m.previousElementSibling.classList.add("all");m.remove();return}
+  const b=e.target.closest(".rcol button[data-la]");if(b)lookup(+b.dataset.la,+b.dataset.lo);
+});
+
 /* ---------- 起動 ---------- */
 async function search(q){
   q=q.trim();if(!q)return;status("住所をさがしています…");
@@ -732,6 +809,7 @@ file.addEventListener("change",()=>readFile(file.files[0]));
 drop.addEventListener("drop",e=>readFile(e.dataTransfer.files[0]));
 
 initMaps();
+initRank();
 const qa=new URLSearchParams(location.search).get("a");
 if(qa){$("#q").value=qa;search(qa)}
 </script>
