@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>土地の前歴 ― その土地、前は何だった？</title>
+<meta name="description" content="住所を入れると、明治の地図・戦後の空中写真・地形の調査・ハザード想定から、その土地の前歴を洗いざらい出します。">
+<meta property="og:title" content="土地の前歴 ― その土地、前は何だった？">
+<meta property="og:description" content="住所を入れると、明治の地図・戦後の空中写真・地形の調査から、その土地が昔なんだったか出ます。">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://arai-sarai-data.github.io/zenreki/og.png">
+<meta property="og:url" content="https://arai-sarai-data.github.io/zenreki/">
+<link rel="canonical" href="https://arai-sarai-data.github.io/zenreki/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@arai_sarai_data">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Shippori+Mincho+B1:wght@600;800&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<style>
+:root{
+  --paper:#f2eee3; --card:#fbf9f3; --ink:#1b1a17; --sub:#5d5a52; --rule:#1b1a17; --hair:#cfc9b8;
+  --shu:#c4321a; --shu-soft:#f3d9d2; --ai:#1d3f8f; --warn:#e8a13a;
+  --mincho:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --goth:"BIZ UDPGothic","Hiragino Sans","Yu Gothic",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--goth);line-height:1.7;-webkit-text-size-adjust:100%}
+a{color:var(--ai)}
+.wrap{max-width:980px;margin:0 auto;padding:0 18px}
+/* masthead */
+.mast{border-bottom:3px double var(--ink)}
+.mast .wrap{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-top:14px;padding-bottom:10px}
+.logo{font-family:var(--mincho);font-weight:800;font-size:22px;letter-spacing:.12em;text-decoration:none;color:var(--ink)}
+.logo small{font-family:var(--goth);font-weight:400;font-size:11px;letter-spacing:0;color:var(--sub);margin-left:8px}
+.mast nav{font-size:13px;white-space:nowrap}
+.mast nav a{color:var(--ink);margin-left:14px;text-decoration:none;border-bottom:1px solid var(--hair)}
+/* hero */
+.hero{padding:44px 0 26px}
+.hero h1{font-family:var(--mincho);font-weight:800;font-size:clamp(34px,7vw,64px);line-height:1.15;margin:0 0 14px;letter-spacing:.02em}
+.hero h1 em{font-style:normal;color:var(--shu)}
+.hero p.lead{margin:0 0 22px;color:var(--sub);max-width:36em}
+form.q{display:flex;border:2px solid var(--ink);background:#fff;max-width:640px}
+form.q input{flex:1;min-width:0;border:0;padding:14px 14px;font:inherit;font-size:17px;background:transparent;outline:none}
+form.q button{border:0;background:var(--ink);color:#fff;font:inherit;font-weight:700;font-size:16px;padding:0 22px;cursor:pointer;letter-spacing:.2em}
+form.q button:active{background:#000}
+.eg{margin-top:12px;font-size:13px;color:var(--sub)}
+.eg button{font:inherit;font-size:13px;border:1px solid var(--ink);background:transparent;color:var(--ink);padding:2px 10px;margin:4px 6px 0 0;cursor:pointer}
+.eg button:hover{background:var(--ink);color:#fff}
+.status{min-height:1.7em;margin-top:10px;font-size:14px;color:var(--shu)}
+/* verdict */
+#result{display:none;padding-bottom:10px}
+#result.on{display:block}
+.verdict{border-top:3px double var(--ink);padding:26px 0 6px}
+.verdict .where{font-size:14px;color:var(--sub)}
+.verdict h2{font-family:var(--mincho);font-weight:800;font-size:clamp(30px,6.4vw,56px);line-height:1.2;margin:4px 0 6px}
+.verdict h2 b{color:var(--shu);font-weight:800}
+.verdict .basis{font-size:14px;color:var(--sub);margin:0}
+.share{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 24px}
+.share a,.share button{font:inherit;font-size:14px;font-weight:700;padding:9px 16px;border:2px solid var(--ink);background:var(--ink);color:#fff;text-decoration:none;cursor:pointer}
+.share button.ghost{background:transparent;color:var(--ink)}
+/* rirekisho */
+.sheet{position:relative;background:var(--card);border:2px solid var(--rule);box-shadow:6px 6px 0 rgba(27,26,23,.12)}
+.sheet-head{display:flex;justify-content:space-between;align-items:flex-end;padding:14px 16px 10px;border-bottom:2px solid var(--rule)}
+.sheet-head .ttl{font-family:var(--mincho);font-weight:800;font-size:26px;letter-spacing:.6em}
+.sheet-head .date{font-size:13px}
+.r-top{display:grid;grid-template-columns:1fr 168px;border-bottom:2px solid var(--rule)}
+.r-top .cells{border-right:1px solid var(--rule)}
+.cell{display:grid;grid-template-columns:88px 1fr;border-bottom:1px solid var(--rule);min-height:54px}
+.cell:last-child{border-bottom:0}
+.cell .k{font-size:12px;padding:8px 10px;border-right:1px dashed var(--hair);color:var(--sub)}
+.cell .v{padding:8px 12px;align-self:center}
+.cell .v.big{font-family:var(--mincho);font-weight:800;font-size:22px;line-height:1.35}
+.cell .v .num{font-family:var(--mincho);font-weight:800;font-size:26px}
+.photo{padding:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.photo canvas,.photo .nophoto{width:144px;height:180px;border:1px solid var(--rule);background:#ddd8ca;display:block}
+.photo .nophoto{display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--sub);text-align:center;padding:8px}
+.photo small{font-size:11px;color:var(--sub);text-align:center;line-height:1.4}
+table.hist{width:100%;border-collapse:collapse}
+table.hist th{font-weight:400;font-size:12px;color:var(--sub);border-bottom:1px solid var(--rule);padding:6px 10px;text-align:center}
+table.hist td{border-bottom:1px solid var(--rule);padding:9px 12px;vertical-align:top}
+table.hist td.when{width:150px;border-right:1px solid var(--rule);font-size:13px;white-space:nowrap}
+table.hist td.when small{display:block;color:var(--sub);font-size:11px}
+table.hist td .what{font-weight:700}
+table.hist td .note{font-size:13px;color:var(--sub);margin-top:2px}
+table.hist tr.sec td{background:#efe9da;text-align:center;font-family:var(--mincho);font-weight:800;letter-spacing:.5em;padding:5px;font-size:14px}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:0 7px;margin-right:6px;border:1px solid currentColor;vertical-align:1px}
+.tag.red{color:var(--shu)}.tag.ok{color:#2c6b3f}.tag.gray{color:var(--sub)}
+.memo{padding:12px 14px 16px;border-top:2px solid var(--rule)}
+.memo .k{font-size:12px;color:var(--sub)}
+.memo p{margin:4px 0 0;font-size:14.5px}
+.stamp{position:absolute;right:200px;top:58px;width:112px;height:112px;border:4px double var(--shu);border-radius:50%;color:var(--shu);display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(-12deg);font-family:var(--mincho);font-weight:800;mix-blend-mode:multiply;opacity:.88;pointer-events:none;background:rgba(196,50,26,.04)}
+.stamp .s1{font-size:11px;letter-spacing:.3em;border-bottom:1px solid var(--shu);padding:0 4px;margin-bottom:2px}
+.stamp .s2{font-size:30px;line-height:1.1;letter-spacing:.04em}
+.stamp.calm{color:#2c4f83;border-color:#2c4f83;background:rgba(44,79,131,.04)}
+.stamp.calm .s1{border-color:#2c4f83}
+/* sections */
+section.blk{border-top:3px double var(--ink);margin-top:40px;padding-top:22px}
+section.blk h3{font-family:var(--mincho);font-weight:800;font-size:26px;margin:0 0 4px}
+section.blk p.d{margin:0 0 14px;color:var(--sub);font-size:14px}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-bottom:10px;font-size:14px}
+.ctrl label{display:flex;gap:6px;align-items:center}
+select{font:inherit;font-size:14px;padding:5px 8px;border:2px solid var(--ink);background:#fff;color:var(--ink)}
+.swipe{position:relative;height:min(68vh,560px);border:2px solid var(--ink);overflow:hidden;background:#ddd8ca;touch-action:none}
+.swipe .m{position:absolute;inset:0}
+#mapR{clip-path:inset(0 0 0 50%)}
+.bar{position:absolute;top:0;bottom:0;left:50%;width:0;z-index:5}
+.bar::before{content:"";position:absolute;top:0;bottom:0;left:-1px;width:3px;background:#fff;box-shadow:0 0 0 1px var(--ink)}
+.bar .knob{position:absolute;top:50%;left:-23px;width:46px;height:46px;margin-top:-23px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:ew-resize;touch-action:none;user-select:none}
+.lbl{position:absolute;top:10px;z-index:4;background:var(--ink);color:#fff;font-size:12px;font-weight:700;padding:3px 9px;pointer-events:none}
+.lbl.l{left:10px}.lbl.r{right:10px}
+.legend{font-size:12px;color:var(--sub);margin-top:6px;display:flex;flex-wrap:wrap;gap:4px 12px}
+.legend i{display:inline-block;width:12px;height:12px;border:1px solid rgba(0,0,0,.25);vertical-align:-2px;margin-right:4px}
+.maplibregl-ctrl-attrib{font-size:10px}
+/* walk */
+.drop{border:2px dashed var(--ink);padding:18px;text-align:center;background:var(--card);cursor:pointer}
+.drop.hover{background:#fff}
+.walkres{margin-top:12px;font-size:15px}
+.bars{display:flex;height:22px;border:1px solid var(--ink);margin:8px 0 4px}
+.bars span{display:block;height:100%}
+/* photos */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.grid figure{margin:0;background:var(--card);border:1px solid var(--ink)}
+.grid img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#ddd8ca;filter:saturate(.85)}
+.grid figcaption{font-size:11px;line-height:1.45;padding:5px 7px;color:var(--sub);word-break:break-all}
+.grid figcaption b{color:var(--ink)}
+footer{border-top:3px double var(--ink);margin-top:48px;padding:20px 0 40px;font-size:12.5px;color:var(--sub)}
+footer p{margin:0 0 8px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+.toast.on{opacity:1}
+.modal{position:fixed;inset:0;background:rgba(27,26,23,.72);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
+.modal.on{display:flex}
+.modal .box{background:var(--paper);border:2px solid var(--ink);max-width:760px;width:100%;padding:14px}
+.modal img{display:block;width:100%;border:1px solid var(--ink)}
+.modal .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.modal .row a,.modal .row button{font:inherit;font-size:14px;font-weight:700;padding:8px 14px;border:2px solid var(--ink);background:var(--ink);color:#fff;text-decoration:none;cursor:pointer}
+.modal .row button.ghost{background:transparent;color:var(--ink)}
+.modal .row small{color:var(--sub);font-size:12px}
+@media (max-width:640px){
+  .r-top{grid-template-columns:1fr}
+  .r-top .cells{border-right:0;border-bottom:1px solid var(--rule)}
+  .photo{flex-direction:row;justify-content:flex-start;gap:12px}
+  .photo canvas,.photo .nophoto{width:108px;height:135px}
+  .photo small{text-align:left}
+  .cell{grid-template-columns:70px 1fr}
+  table.hist td.when{width:96px;white-space:normal}
+  .stamp{width:84px;height:84px;right:10px;top:56px}
+  .stamp .s2{font-size:23px}
+  .sheet-head .ttl{font-size:21px;letter-spacing:.4em}
+  .mast nav a:first-child{display:none}
+}
+</style>
+</head>
+<body>
+<header class="mast"><div class="wrap">
+  <a class="logo" href="./">土地の前歴<small>住所で洗いざらい</small></a>
+  <nav><a href="#compare">今昔くらべ</a><a href="#walk">散歩ログ</a><a href="https://x.com/arai_sarai_data" target="_blank" rel="noopener">@arai_sarai_data</a></nav>
+</div></header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>その土地、<br><em>前</em>は何だった？</h1>
+    <p class="lead">住所を入れると、明治の地図、終戦直後の空中写真、国の地形調査、浸水や土砂災害の想定から、その場所の「前歴」を一枚にまとめます。</p>
+    <form class="q" id="qform" autocomplete="off">
+      <input id="q" type="search" placeholder="例：東京都江東区豊洲2丁目 / 渋谷駅" aria-label="住所・駅名">
+      <button type="submit">調べる</button>
+    </form>
+    <div class="eg">ためしに：
+      <button data-q="東京都江東区豊洲二丁目">豊洲</button><button data-q="千葉県浦安市舞浜">浦安・舞浜</button><button data-q="東京都世田谷区玉川二丁目">二子玉川</button><button data-q="東京都渋谷区道玄坂一丁目">渋谷</button><button data-q="大阪府大阪市北区梅田三丁目">梅田</button><button data-q="愛知県名古屋市港区">名古屋・港区</button>
+    </div>
+    <div class="status" id="status"></div>
+  </section>
+
+  <section id="result">
+    <div class="verdict">
+      <div class="where" id="vWhere"></div>
+      <h2 id="vHead"></h2>
+      <p class="basis" id="vBasis"></p>
+    </div>
+    <div class="share">
+      <a id="shareX" href="#" target="_blank" rel="noopener">Xで晒す</a>
+      <button class="ghost" id="makeCard" type="button">画像にする</button>
+      <button class="ghost" id="copyLink" type="button">リンクをコピー</button>
+      <button class="ghost" id="goCompare" type="button">昔の写真と見比べる</button>
+    </div>
+
+    <div class="sheet" id="sheet">
+      <div class="sheet-head"><span class="ttl">前歴書</span><span class="date" id="sDate"></span></div>
+      <div class="r-top">
+        <div class="cells">
+          <div class="cell"><div class="k">所在</div><div class="v big" id="sName"></div></div>
+          <div class="cell"><div class="k">現在の海抜</div><div class="v" id="sElev"></div></div>
+          <div class="cell"><div class="k">生い立ち<br>（地形）</div><div class="v" id="sLand"></div></div>
+        </div>
+        <div class="photo" id="sPhoto"></div>
+      </div>
+      <table class="hist">
+        <thead><tr><th>時期</th><th>前歴</th></tr></thead>
+        <tbody id="sHist"></tbody>
+      </table>
+      <div class="memo"><div class="k">地盤からひとこと（国土地理院の解説より）</div><p id="sMemo"></p></div>
+      <div class="stamp" id="stamp"><span class="s1">前歴</span><span class="s2" id="stampTxt"></span></div>
+    </div>
+  </section>
+
+  <section class="blk" id="compare">
+    <h3>今昔くらべ</h3>
+    <p class="d">真ん中の丸をつかんで左右に動かすと、昔と今を見比べられます。地図をクリックすると、その場所の前歴を調べます。</p>
+    <div class="ctrl">
+      <label>左（昔）<select id="selL">
+        <option value="meiji">明治の低湿地（田・沼・川）</option>
+        <option value="usa" selected>1945〜50年 空中写真</option>
+        <option value="old">1961〜69年 空中写真</option>
+        <option value="g1">1974〜78年 空中写真</option>
+        <option value="lfc">地形の成り立ち（治水地形分類）</option>
+        <option value="flood">洪水で浸かる深さ（想定最大）</option>
+      </select></label>
+      <label>右（今）<select id="selR">
+        <option value="photo" selected>最新の空中写真</option>
+        <option value="std">いまの地図</option>
+      </select></label>
+    </div>
+    <div class="swipe" id="swipe">
+      <div class="m" id="mapL"></div>
+      <div class="m" id="mapR"></div>
+      <div class="lbl l" id="lblL"></div><div class="lbl r" id="lblR"></div>
+      <div class="bar" id="bar"><div class="knob" id="knob">◀▶</div></div>
+    </div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section class="blk" id="walk">
+    <h3>散歩ログを、明治の地図に重ねる</h3>
+    <p class="d">スマホの記録アプリなどで書き出したGPXやGeoJSON、KMLを入れると、歩いた道が昔は何だったかを数えます。ファイルはこのブラウザの中だけで読み、どこにも送りません。</p>
+    <label class="drop" id="drop">ここにファイルをドロップ、またはタップして選ぶ<input type="file" id="file" accept=".gpx,.geojson,.json,.kml" hidden></label>
+    <div class="walkres" id="walkres"></div>
+  </section>
+
+  <section class="blk" id="photos" hidden>
+    <h3>この辺りで撮られた写真</h3>
+    <p class="d">Wikimedia Commonsにある、位置情報つきの写真を古い順に並べています。どれも自由な利用が許された写真で、撮影者とライセンスを下に表示しています。</p>
+    <div class="grid" id="pgrid"></div>
+  </section>
+</main>
+
+<footer><div class="wrap">
+  <p><b>出典</b>：国土地理院（地理院タイル〔標準地図・淡色地図・空中写真・1945〜50年米軍撮影写真・1961〜69年写真・1974〜78年写真・標高〕、ベクトルタイル「地形分類」、明治期の低湿地データ、治水地形分類図、住所検索・逆ジオコーダ）／国土交通省 ハザードマップポータルサイト（洪水・高潮・津波浸水想定、土砂災害警戒区域）／Wikimedia Commons。地図データは各出典のものを加工せずに表示しています。</p>
+  <p><b>注意</b>：表示は各機関の公開データを機械的に読み取ったもので、その土地の安全・危険を保証するものではありません。明治期の地図は位置が最大100mほどずれることがあります。想定がない場所は「想定区域外」ではなく「データなし」の場合もあります。家探しなどの判断には、自治体のハザードマップや重要事項説明で必ず確認してください。</p>
+  <p>入力した住所は保存しません。共有リンクには町丁目までしか入りません。</p>
+  <p>作った人：洗井 浚（<a href="https://x.com/arai_sarai_data" target="_blank" rel="noopener">@arai_sarai_data</a>）</p>
+</div></footer>
+<div class="modal" id="modal"><div class="box"><img id="cardImg" alt="前歴書の画像">
+<div class="row"><a id="cardSave" download="zenreki.png" href="#">画像を保存</a><button class="ghost" id="cardClose" type="button">閉じる</button><small>スマホは画像を長押しで保存できます。Xには画像と一緒にリンクを貼ってください。</small></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+"use strict";
+/* ---------- 定数 ---------- */
+const GSI = "https://cyberjapandata.gsi.go.jp/xyz/";
+const HZ = "https://disaportaldata.gsi.go.jp/raster/";
+const SITE_TAG = "土地の前歴";
+
+// 国土地理院 ベクトルタイル「地形分類」の解説文（地理院地図のstyle.jsより）
+const LF = [
+ ["山地斜面等","slope",[10101,11201,11202,11203,11204,1010101],"尾根や谷からなる土地や、比較的傾斜が急な土地。段丘崖の斜面や火山地を含む。","大雨や地震により、崖崩れや土石流、地すべりなどの土砂災害のリスクがある。"],
+ ["崖･段丘崖","slope",[10202,10204,2010201],"山地や台地の縁、海岸沿いにある極めて急な斜面。","周辺では大雨や地震の揺れによる崖崩れなどの土砂災害のリスクがある。"],
+ ["地すべり地形","slide",[10205,10206],"斜面が下方に移動し、斜面上部の崖と不規則な凹凸のある移動部分からなる土地。山体の一部が重力により滑ってできる。","大雨・雪解けにより多量の水分が土中に含まれたり、地震で揺れたりすることで、土地が滑って土砂災害を引き起こすことがある。"],
+ ["台地･段丘","plateau",[10301,10302,10303,10304,10305,10306,10307,10308,10310,10312,10314,10508,2010101],"周囲より階段状に高くなった平坦な土地。周囲が侵食により削られて取り残されてできる。","河川氾濫のリスクはほとんどないが、河川との高さの差が小さい場合には注意。縁辺部の斜面近くでは崖崩れに注意。地盤は良く、地震の揺れは小さい。液状化の発生傾向が弱い。"],
+ ["山麓堆積地形","foot",[10401,10402,10403,10404,10406,10407,3010101],"山地や崖･段丘崖の下方にあり、山地より傾斜の緩やかな土地。崖崩れや土石流などによって運ばれた土砂が堆積してできる。","大雨により土石流が発生するリスクがある。地盤は不安定で、地震による崖崩れにも注意。"],
+ ["扇状地","fan",[10501,10502,3020101],"山地の谷の出口から扇状に広がる傾斜の緩やかな土地。谷口からの氾濫によって運ばれた土砂が堆積してできる。","山地からの出水による浸水や、谷口に近い場所では土石流のリスクがある。比較的地盤は良いため、地震の際には揺れにくい。下流部ではやや弱い液状化の発生傾向がある。"],
+ ["自然堤防","levee",[10503,3040101],"現在や昔の河川に沿って細長く分布し、周囲より0.5～数メートル高い土地。河川が氾濫した場所に土砂が堆積してできる。","洪水に対しては比較的安全だが、大規模な洪水では浸水することがある。縁辺部では液状化の発生傾向が強い。"],
+ ["天井川等","levee",[10506,10507,10801],"河川が周辺の土地よりも高い河川の部分と、それに沿って形成された微高地。","ひとたび天井川の堤防が決壊すれば、氾濫流が周辺に一気に拡がるため注意が必要。"],
+ ["砂州・砂丘","sand",[10504,10505,10512,3050101],"主に現在や昔の海岸･湖岸･河岸沿いにあり、周囲より高い砂礫質な土地。波によって打ち上げられた砂や礫、風によって運ばれた砂が堆積することでできる。","通常の洪水では浸水を免れることが多い。強い地震による液状化の発生傾向は砂州ではやや強く、砂丘ではやや弱いが、砂丘縁辺部では非常に強い。"],
+ ["凹地・浅い谷","valley",[10601,2010301],"台地や扇状地、砂丘などの中にあり、周辺と比べてわずかに低い土地。小規模な流水の働きや、周辺部に砂礫が堆積して相対的に低くなる等でできる。","大雨の際に一時的に雨水が集まりやすく、浸水のおそれがある。地盤は周囲（台地･段丘など）より軟弱な場合があり、特に周辺が砂州・砂丘の場所では液状化の発生傾向が強い。"],
+ ["氾濫平野・海岸平野","plain",[3030101,10701,10702,10705],"起伏が小さく、低くて平坦な土地。洪水で運ばれた砂や泥などが河川周辺に堆積したり、過去の海底が干上がったりしてできる。","河川の氾濫に注意。地盤は海岸に近いほど軟弱で、地震の際にやや揺れやすい。強い地震による液状化発生傾向は海岸平野で強く、氾濫平野ではやや強い。沿岸部では高潮に注意。"],
+ ["後背低地･湿地","marsh",[10703,10804,3030201],"主に氾濫平野の中にあり、周囲よりわずかに低い土地。洪水による砂や礫の堆積がほとんどなく、氾濫水に含まれる泥が堆積してできる。","河川の氾濫によって周囲よりも長期間浸水し、水はけが悪い。地盤が極めて軟弱で、地震の際は揺れが大きくなりやすい。液状化の発生傾向がやや強い。沿岸部では高潮に注意。"],
+ ["旧河道","river",[10704,3040201,3040202],"かつて河川の流路だった場所で、周囲よりもわずかに低い土地。流路の移動によって河川から切り離されて、その後に砂や泥などで埋められてできる。","河川の氾濫によって周囲よりも長期間浸水し、水はけが悪い。地盤が軟弱で、地震の際の揺れが大きくなりやすい。特に埋立（盛土）した地域では液状化の発生傾向が非常に強い。"],
+ ["落堀","river",[3040301],"河川沿いにある凹地状の土地。洪水のときに、堤防を越えた水によって地面が侵食されてできる。","河川の氾濫や堤防からの越水に注意。周囲の地盤に比べて軟弱なことが多く、特に埋立（盛土）した地域では液状化の発生傾向が非常に強い。"],
+ ["河川敷･浜","bank",[10802,10803,10807,10808],"データ整備時に河川敷や浜辺、岩礁である土地。一部、過去の浜辺を含む。","河川の増水や高波で冠水する。河川敷は液状化の発生傾向が非常に強い。"],
+ ["水部","water",[10805,10806,10901,10903,5010201],"データ整備時において、海や湖沼、河川などの水面である場所。",""],
+ ["旧水部","oldwater",[10904,5010301],"旧版地形図や古い空中写真等の資料から、かつて海や湖、池･貯水池、河川・河川敷などの水部であったと確認できた土地。その後人工的に陸地にされたところ。","地盤が軟弱で、埋立（盛土）した地域では液状化の発生傾向が非常に強い。また、干拓により人工的に陸化した地域では液状化の発生傾向が強い。沿岸部では高潮に注意。"],
+ ["切土地","cut",[11001,11003,11009,11011,4010301],"山地、台地の縁などの斜面を切取りにより造成した土地。","切取り斜面によっては、大雨や地震により斜面崩壊のリスクがある。地盤は一般的に良好。"],
+ ["農耕平坦化地","cut",[11002],"山地などを切り開いて整地した農耕地。","大雨や地震により崩壊するリスクがある。"],
+ ["干拓地","reclaim",[11008,4010101],"水面や低湿地を堤防で締め切って排水して、新たな陸地とした土地。過去の地形図や資料から、干拓されたことが確認できる場所。","一般に海･湖水面より低いため、洪水時に氾濫水が留まりやすい。沿岸部では特に高潮に対して注意が必要。地盤は軟弱で、地震による揺れも大きくなりやすい。液状化の発生傾向が強い。"],
+ ["盛土地･埋立地","fill",[11004,11005,11006,11007,11014,4010201],"周囲の地表より高く盛土した土地や、海水面などの水部に土砂を投入して陸地にしたり、谷のような凹地を埋め立てて造成したりした土地。","高さが十分でない場合には浸水のリスクがある。山地や台地では降雨･地震により地盤崩壊のリスクがある。低地では液状化の発生傾向が非常に強く、海や湖沼･河川を埋め立てた場所では特に注意。"],
+ ["改変工事中","work",[11010],"データ整備時に改変工事が行われていた土地。",""],
+ ["山地","slope",[11,1],"起伏が大きな尾根と谷からなる地形。","土砂災害に注意。"],
+ ["残丘状地形","slope",[12],"周囲から孤立して突出した岩峰または台地状の地形。","土砂災害に注意。とくに周縁部の崖では、落石や斜面崩壊に注意。"],
+ ["カルスト地形","slope",[13],"石灰岩が雨水で溶けてできた地形。尾根や谷が少なく、しばしば陥没地形がみられる。","地盤の陥没に注意。周縁部の崖では、落石や斜面崩壊に注意。"],
+ ["丘陵・小起伏地","hill",[21],"起伏が小さな尾根と谷からなる地形。","土砂災害に注意。"],
+ ["火山地形","volcano",[31,32,33,34,3],"火山噴出物や、火山から運ばれた土砂によってできた地形。","火山噴火、土砂災害に注意。"],
+ ["台地・段丘","plateau",[41,4],"低地が隆起してできた台地状の地形。低地との境界などには侵食による崖（段丘崖）がみられることが多い。","段丘崖の周辺では、落石や崖崩れに注意。"],
+ ["低地","plain",[51,5],"河川や海の流れによって運ばれた砂礫や泥が堆積してできた平坦地。または、その流れの侵食によってできた平坦地。","河川氾濫、高潮、液状化に注意。地震時に揺れやすい。"],
+ ["砂丘","sand",[61,6],"風によって運ばれた砂が小高く堆積してできた地形。","周縁部や、周囲よりも低い場所では、液状化に注意。地震時に揺れやすい。"],
+ ["湖","water",[71,7],"自然にできた湖。",""]
+];
+const LFC = {}; LF.forEach(([n,k,codes,d,r])=>codes.forEach(c=>LFC[c]={n,k,d,r}));
+
+// 明治期の低湿地データの凡例色（国土地理院）
+const SWALE = [
+ [[147,200,254],"河川・湖沼・海面","water"],[[251,247,176],"田（水田・陸田）","paddy"],[[225,227,118],"深田（ぬかるむ田）","paddy"],
+ [[200,200,228],"湿地","marsh"],[[119,227,201],"ヨシ（芦葦）の群生地","marsh"],[[173,255,173],"茅の原","marsh"],
+ [[254,200,200],"泥地","marsh"],[[228,172,123],"泥炭地","marsh"],[[209,234,255],"干潟・砂浜","tidal"],
+ [[227,227,200],"塩田","salt"],[[254,227,200],"砂礫地","dry"],[[162,222,162],"草地","dry"],[[173,200,147],"荒地","dry"]
+];
+// ハザードマップポータルの浸水深の色
+const DEPTH = [
+ [[255,255,179],"0.5m未満",0],[[247,245,169],"0.5m未満",0],[[248,225,166],"0.5〜3m",1],[[255,216,192],"0.5〜3m",1],
+ [[255,183,183],"3〜5m",2],[[255,145,145],"5〜10m",3],[[242,133,201],"10〜20m",4],[[220,122,220],"20m以上",5]
+];
+const DEPTH_NOTE = ["床下くらい","1階の床上〜軒下","2階の床まで","2階の屋根まで","3〜5階まで","ビル6階以上"];
+
+/* ---------- 小道具 ---------- */
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("on"),1800)}
+function status(t){$("#status").textContent=t||""}
+function wareki(d){const y=d.getFullYear();return `令和${y-2018}年${d.getMonth()+1}月${d.getDate()}日現在`}
+function tileXY(lat,lon,z){const n=2**z,r=lat*Math.PI/180;return [(lon+180)/360*n,(1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*n]}
+const imgCache=new Map();
+function loadTile(url){
+  if(imgCache.has(url))return imgCache.get(url);
+  const p=fetch(url).then(r=>r.ok?r.blob():null).then(b=>b&&b.size>200?createImageBitmap(b):null).then(bm=>{
+    if(!bm)return null;const c=document.createElement("canvas");c.width=bm.width;c.height=bm.height;
+    const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(bm,0,0);return {bm,data:x.getImageData(0,0,c.width,c.height).data,w:c.width};
+  }).catch(()=>null);
+  imgCache.set(url,p);return p;
+}
+async function pixel(tpl,lat,lon,z){
+  const [fx,fy]=tileXY(lat,lon,z),tx=Math.floor(fx),ty=Math.floor(fy);
+  const t=await loadTile(tpl.replace("{z}",z).replace("{x}",tx).replace("{y}",ty));
+  if(!t)return null;
+  const px=Math.min(255,Math.floor((fx-tx)*256)),py=Math.min(255,Math.floor((fy-ty)*256)),i=(py*t.w+px)*4,d=t.data;
+  return [d[i],d[i+1],d[i+2],d[i+3]];
+}
+// 点の周り（±r px）で最も多い色を拾う。境目のにじみ対策
+async function pixelVote(tpl,lat,lon,z,pal,r=2){
+  const [fx,fy]=tileXY(lat,lon,z),tx=Math.floor(fx),ty=Math.floor(fy);
+  const t=await loadTile(tpl.replace("{z}",z).replace("{x}",tx).replace("{y}",ty));
+  if(!t)return null;
+  const cx=Math.floor((fx-tx)*256),cy=Math.floor((fy-ty)*256),votes=new Map();let center=null;
+  for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+    const x=cx+dx,y=cy+dy;if(x<0||y<0||x>255||y>255)continue;
+    const i=(y*t.w+x)*4,d=t.data;if(d[i+3]<128)continue;
+    const m=nearest([d[i],d[i+1],d[i+2]],pal);if(!m)continue;
+    if(dx===0&&dy===0)center=m;votes.set(m,(votes.get(m)||0)+1);
+  }
+  if(center)return center;
+  let best=null,bn=0;votes.forEach((n,m)=>{if(n>bn){bn=n;best=m}});return best;
+}
+function nearest(rgb,pal,tol=28){let best=null,bd=1e9;for(const p of pal){const c=p[0],d=(c[0]-rgb[0])**2+(c[1]-rgb[1])**2+(c[2]-rgb[2])**2;if(d<bd){bd=d;best=p}}return bd<=tol*tol?best:null}
+function pip(pt,ring){let ins=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){const [xi,yi]=ring[i],[xj,yj]=ring[j];if(((yi>pt[1])!==(yj>pt[1]))&&(pt[0]<(xj-xi)*(pt[1]-yi)/(yj-yi)+xi))ins=!ins}return ins}
+function inPoly(pt,g){const polys=g.type==="Polygon"?[g.coordinates]:g.type==="MultiPolygon"?g.coordinates:[];
+  return polys.some(p=>pip(pt,p[0])&&!p.slice(1).some(h=>pip(pt,h)))}
+const gjCache=new Map();
+function getJSON(url){if(!gjCache.has(url))gjCache.set(url,fetch(url).then(r=>r.ok?r.json():null).catch(()=>null));return gjCache.get(url)}
+async function landform(n,lat,lon){
+  for(const z of [16,14,13]){
+    const [fx,fy]=tileXY(lat,lon,z);
+    const g=await getJSON(`${GSI}experimental_landformclassification${n}/${z}/${Math.floor(fx)}/${Math.floor(fy)}.geojson`);
+    if(!g||!g.features)continue;
+    for(const f of g.features){const c=+f.properties.code;if(LFC[c]&&inPoly([lon,lat],f.geometry))return {...LFC[c],code:c,z}}
+  }
+  return null;
+}
+async function elevation(lat,lon){
+  for(const [L,z] of [["dem5a_png",15],["dem5b_png",15],["dem_png",14]]){
+    const p=await pixel(`${GSI}${L}/{z}/{x}/{y}.png`,lat,lon,z);
+    if(!p||p[3]===0)continue;
+    if(p[0]===128&&p[1]===0&&p[2]===0)continue;
+    const x=p[0]*65536+p[1]*256+p[2];return Math.round((x<2**23?x:x-2**24)*0.01*10)/10;
+  }
+  return null;
+}
+async function anyPixel(tpl,lat,lon,z){const p=await pixel(tpl,lat,lon,z);return p&&p[3]>100?p:null}
+
+/* ---------- 住所 ---------- */
+let MUNI=null;
+async function muni(){
+  if(MUNI)return MUNI;MUNI={};
+  try{const t=await (await fetch("https://maps.gsi.go.jp/js/muni.js")).text();
+    for(const m of t.matchAll(/\["(\d+)"\]\s*=\s*'([^']*)'/g)){const a=m[2].split(",");MUNI[+m[1]]=a[1]+a[3].replace(/[　\s]/g,"")}}catch(e){}
+  return MUNI;
+}
+async function geocode(q){
+  const r=await fetch("https://msearch.gsi.go.jp/address-search/AddressSearch?q="+encodeURIComponent(q));
+  const j=await r.json();if(!j||!j.length)return null;
+  const f=j[0];return {lon:f.geometry.coordinates[0],lat:f.geometry.coordinates[1],title:f.properties.title};
+}
+async function revgeo(lat,lon){
+  try{const j=await (await fetch(`https://mreversegeocoder.gsi.go.jp/reverse-geocoder/LonLatToAddress?lat=${lat}&lon=${lon}`)).json();
+    if(!j.results)return null;const m=await muni();return ((m[+j.results.muniCd]||"")+(j.results.lv01Nm||"").replace(/^－$/,"")).trim()||null}catch(e){return null}
+}
+function townOf(title){ // 番地より細かい部分を落とす
+  return title.replace(/[0-9０-９]+(番地?|号|－|-).*$/,"").replace(/[0-9０-９]+$/,"");
+}
+
+/* ---------- 判定 ---------- */
+function judge(d){
+  const s=d.swale&&d.swale[2], n=d.lf1&&d.lf1.k, a=d.lf2&&d.lf2.k, filled=a==="fill"||n==="fill";
+  const R=(word,stamp,calm=false,head=null)=>({word,stamp,calm,head});
+  if(n==="oldwater"||(s==="water"&&(filled||a==="reclaim")))return R(filled?"水の底（埋め立て地）":"水の底","水底");
+  if(a==="reclaim"||n==="reclaim")return R("海か湖（干拓地）","干拓");
+  if(n==="river")return R("川","旧河道");
+  if(s==="water")return R("川か池か海","水面");
+  if(s==="tidal")return R("干潟","干潟");
+  if(s==="paddy")return R(d.swale[1].startsWith("深田")?"ぬかるむ深田":"田んぼ","田圃");
+  if(s==="marsh"||n==="marsh")return R("湿地","湿地");
+  if(s==="salt")return R("塩田","塩田");
+  if(filled)return R("盛り土で造った土地","盛土");
+  if(a==="cut"||n==="cut")return R("山や丘を削った土地","切土");
+  if(n==="slide")return R("地すべりの跡","地滑");
+  if(n==="slope"||n==="foot"||n==="hill"||n==="volcano")return R("山の斜面","斜面");
+  if(n==="valley")return R("台地の中の谷","谷");
+  if(n==="plateau")return R("台地","台地",true,"ここは昔から<b>台地</b>です。");
+  if(n==="sand")return R("砂浜か砂丘","砂州");
+  if(n==="fan")return R("扇状地","扇状地",true,"ここは昔から<b>扇状地</b>です。");
+  if(n==="levee")return R("川沿いの微高地","微高地",true);
+  if(n==="plain")return R("川があふれてできた平野","低地");
+  if(s==="dry")return R(d.swale[1],"原野",true);
+  return R(null,"不詳",true);
+}
+
+/* ---------- 調べる ---------- */
+let current=null,seq=0;
+async function lookup(lat,lon,hintLabel){
+  const my=++seq;
+  status("調べています…");
+  const [label,elev,swale,lf1,lf2,flood,tide,tsunami,kyu,dos,jis]=await Promise.all([
+    hintLabel?Promise.resolve(hintLabel):revgeo(lat,lon),
+    elevation(lat,lon),
+    pixelVote(`${GSI}swale/{z}/{x}/{y}.png`,lat,lon,14,SWALE),
+    landform(1,lat,lon), landform(2,lat,lon),
+    pixelVote(`${HZ}01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png`,lat,lon,16,DEPTH,1),
+    pixelVote(`${HZ}03_hightide_l2_shinsuishin_data/{z}/{x}/{y}.png`,lat,lon,16,DEPTH,1),
+    pixelVote(`${HZ}04_tsunami_newlegend_data/{z}/{x}/{y}.png`,lat,lon,16,DEPTH,1),
+    anyPixel(`${HZ}05_kyukeishakeikaikuiki/{z}/{x}/{y}.png`,lat,lon,16),
+    anyPixel(`${HZ}05_dosekiryukeikaikuiki/{z}/{x}/{y}.png`,lat,lon,16),
+    anyPixel(`${HZ}05_jisuberikeikaikuiki/{z}/{x}/{y}.png`,lat,lon,16)
+  ]);
+  if(my!==seq)return;
+  const d={lat,lon,label:label||"（地名不明）",elev,swale,lf1,lf2,flood,tide,tsunami,dosha:[kyu&&"急傾斜地",dos&&"土石流",jis&&"地すべり"].filter(Boolean)};
+  d.v=judge(d);current=d;
+  render(d);status("");
+  oldPhoto(lat,lon,my);
+  commons(lat,lon,my);
+  flyAll(lat,lon,16);setPin(lat,lon);
+}
+
+function render(d){
+  $("#result").classList.add("on");
+  $("#vWhere").textContent=d.label;
+  $("#vHead").innerHTML=d.v.head||(d.v.word?`ここは昔、<b>${esc(d.v.word)}</b>でした。`:`この場所の前歴は、<b>記録にありません</b>。`);
+  const basis=[];
+  if(d.swale)basis.push(`明治の地図では「${d.swale[1]}」`);
+  if(d.lf1)basis.push(`地形は「${d.lf1.n}」`);
+  if(d.lf2)basis.push(`人の手で「${d.lf2.n}」`);
+  $("#vBasis").textContent=basis.length?basis.join("、")+"。":"明治の低湿地データと地形分類の範囲外です。空中写真で見比べてみてください。";
+  $("#sDate").textContent=wareki(new Date());
+  $("#sName").textContent=d.label;
+  $("#sElev").innerHTML=d.elev==null?`<span class="tag gray">データなし</span>`:
+    `<span class="num">${d.elev.toFixed(1)}</span> m ${d.elev<=0?'<span class="tag red">海面より低い</span>':d.elev<3?'<span class="tag red">かなり低い</span>':''}`;
+  const lfs=[d.lf1,d.lf2].filter(Boolean);
+  $("#sLand").innerHTML=lfs.length?lfs.map(x=>`<b>${esc(x.n)}</b>`).join("　＋　"):`<span class="tag gray">調査範囲外</span>`;
+  const st=$("#stamp");st.classList.toggle("calm",d.v.calm);$("#stampTxt").textContent=d.v.stamp;
+  $("#stampTxt").style.fontSize=d.v.stamp.length>=3?"24px":"";
+  // 履歴
+  const rows=[];
+  rows.push(`<tr class="sec"><td colspan="2">前　歴</td></tr>`);
+  rows.push(row("明治前期〜中期","1880〜1910年ごろ",
+    d.swale?`<span class="what">${esc(d.swale[1])}</span>`:`<span class="what">低湿地の記録なし</span>`,
+    d.swale?(d.swale[2]==="dry"?"当時の2万分の1地図による。低湿地ではない土地として記録。":"当時の2万分の1地図に、水や湿った土地として描かれています。"):"田・沼・川としては描かれていないか、データの整備範囲外です。"));
+  rows.push(row("昭和20〜25年","1945〜50年","<span class='what'>米軍が空中写真を撮影</span>",`右上の写真欄。<a href="#compare" data-era="usa">今と見比べる</a>`));
+  rows.push(row("昭和36〜44年","1961〜69年","<span class='what'>国が空中写真を撮影</span>",`<a href="#compare" data-era="old">今と見比べる</a>`));
+  if(d.lf2)rows.push(row("戦後〜","造成",`<span class="what">${esc(d.lf2.n)}</span>`,esc(d.lf2.d)));
+  rows.push(row("令和",new Date().getFullYear()+"年",`<span class="what">海抜 ${d.elev==null?"不明":d.elev.toFixed(1)+" m"}</span>`,"国土地理院の標高データ（5m・10m格子）による。"));
+  rows.push(`<tr class="sec"><td colspan="2">賞　罰</td></tr>`);
+  const hz=(name,v,unit)=>row(name,"想定最大規模",v?`<span class="tag red">${esc(v[1])}</span><span class="what">浸かる想定</span>`:`<span class="tag ok">想定なし</span>`,
+    v?`目安：${DEPTH_NOTE[v[2]]}。`:"想定区域の外か、まだ想定が作られていない場所です。");
+  rows.push(hz("洪水",d.flood));rows.push(hz("高潮",d.tide));rows.push(hz("津波",d.tsunami));
+  rows.push(row("土砂災害","警戒区域",d.dosha.length?`<span class="tag red">区域内</span><span class="what">${d.dosha.join("・")}</span>`:`<span class="tag ok">区域外</span>`,
+    d.dosha.length?"都道府県が指定した土砂災害警戒区域に入っています。":"指定された区域には入っていません。"));
+  $("#sHist").innerHTML=rows.join("");
+  const memo=(d.lf2&&d.lf2.r)||(d.lf1&&d.lf1.r)||"";
+  $("#sMemo").textContent=memo||"この場所には地形分類の解説がありません。";
+  // share
+  const url=shareURL(d.label);
+  const bits=[`【${SITE_TAG}】${d.label}`,d.v.word?`前歴は「${d.v.word}」`:"前歴は記録なし"];
+  if(d.elev!=null)bits.push(`海抜${d.elev.toFixed(1)}m`);
+  if(d.flood)bits.push(`洪水で${d.flood[1]}`);
+  $("#shareX").href="https://x.com/intent/post?text="+encodeURIComponent(bits.join("／")+"\n")+"&url="+encodeURIComponent(url)+"&hashtags="+encodeURIComponent(SITE_TAG);
+  history.replaceState(null,"","?a="+encodeURIComponent(d.label));
+  document.title=`${d.label}の前歴：${d.v.word||"記録なし"} | 土地の前歴`;
+  requestAnimationFrame(()=>$("#result").scrollIntoView({behavior:"smooth",block:"start"}));
+}
+function row(a,b,what,note){return `<tr><td class="when">${a}<small>${b}</small></td><td>${what}${note?`<div class="note">${note}</div>`:""}</td></tr>`}
+function shareURL(label){return location.origin+location.pathname+"?a="+encodeURIComponent(label)}
+
+/* 証明写真：その場所の古い空中写真を切り出す */
+async function oldPhoto(lat,lon,my){
+  const box=$("#sPhoto");box.innerHTML=`<div class="nophoto">写真を<br>さがしています</div><small>&nbsp;</small>`;
+  for(const [L,cap] of [["ort_USA10","昭和20年代 米軍撮影"],["ort_old10","昭和30〜40年代撮影"],["gazo1","昭和50年代撮影"]]){
+    const z=17,[fx,fy]=tileXY(lat,lon,z),tx=Math.floor(fx),ty=Math.floor(fy);
+    const W=288,H=360,c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
+    const cx=(fx-tx)*256,cy=(fy-ty)*256;let got=0;
+    const ext=L==="gazo1"?"jpg":"png";
+    await Promise.all([-1,0,1].flatMap(dy=>[-1,0,1].map(async dx=>{
+      const t=await loadTile(`${GSI}${L}/${z}/${tx+dx}/${ty+dy}.${ext}`);if(!t)return;got++;
+      x.drawImage(t.bm,W/2-cx+dx*256,H/2-cy+dy*256);
+    })));
+    if(my!==seq)return;
+    if(got>=6){
+      const img=x.getImageData(0,0,W,H),p=img.data;let blank=0;
+      for(let i=0;i<p.length;i+=400)if(p[i+3]===0)blank++;
+      if(blank>p.length/400*0.15)continue;
+      x.strokeStyle="rgba(196,50,26,.9)";x.lineWidth=3;x.beginPath();x.arc(W/2,H/2,14,0,7);x.stroke();
+      current.photo=c;current.photoCap=cap;
+      box.innerHTML="";box.appendChild(c);box.insertAdjacentHTML("beforeend",`<small>${cap}<br>出典：国土地理院</small>`);return;
+    }
+  }
+  if(my!==seq)return;current.photo=null;
+  box.innerHTML=`<div class="nophoto">この場所の<br>古い写真は<br>ありません</div><small>&nbsp;</small>`;
+}
+
+/* 近所の写真（Wikimedia Commons） */
+async function commons(lat,lon,my){
+  const sec=$("#photos"),g=$("#pgrid");
+  try{
+    const u=`https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=geosearch&ggscoord=${lat}%7C${lon}&ggsradius=800&ggslimit=60&ggsnamespace=6&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=360`;
+    const j=await (await fetch(u)).json();
+    const items=Object.values(j.query?.pages||{}).map(p=>{
+      const ii=p.imageinfo?.[0];if(!ii||!ii.thumburl)return null;const m=ii.extmetadata||{};
+      const raw=(m.DateTimeOriginal?.value||m.DateTime?.value||"").replace(/<[^>]+>/g,"");
+      const y=(raw.match(/(1[89]\d\d|20\d\d)/)||[])[1];
+      return {t:p.title.replace(/^File:/,"").replace(/\.[a-z]+$/i,""),thumb:ii.thumburl,page:ii.descriptionurl,
+        y:y?+y:9999,lic:(m.LicenseShortName?.value||"").replace(/<[^>]+>/g,""),by:(m.Artist?.value||"").replace(/<[^>]+>/g,"").trim().slice(0,40)};
+    }).filter(Boolean).sort((a,b)=>a.y-b.y).slice(0,12);
+    if(my!==seq)return;
+    if(!items.length){sec.hidden=true;return}
+    g.innerHTML=items.map(i=>`<figure><a href="${esc(i.page)}" target="_blank" rel="noopener"><img loading="lazy" src="${esc(i.thumb)}" alt="${esc(i.t)}"></a>
+      <figcaption><b>${i.y<9999?i.y+"年":"撮影年不明"}</b> ${esc(i.t.slice(0,40))}<br>${esc(i.by||"撮影者不明")} / ${esc(i.lic)}</figcaption></figure>`).join("");
+    sec.hidden=false;
+  }catch(e){sec.hidden=true}
+}
+
+/* ---------- 今昔スワイプ地図 ---------- */
+const ATTR='<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>';
+const ATTR_HZ='<a href="https://disaportal.gsi.go.jp/" target="_blank">ハザードマップポータル</a>';
+function ras(url,maxz,attr=ATTR,minz=2){return {type:"raster",tiles:[url],tileSize:256,maxzoom:maxz,minzoom:minz,attribution:attr}}
+const BASE={
+  pale:ras(GSI+"pale/{z}/{x}/{y}.png",18), std:ras(GSI+"std/{z}/{x}/{y}.png",18),
+  photo:ras(GSI+"seamlessphoto/{z}/{x}/{y}.jpg",18),
+  usa:ras(GSI+"ort_USA10/{z}/{x}/{y}.png",17,ATTR,10), old:ras(GSI+"ort_old10/{z}/{x}/{y}.png",17,ATTR,10),
+  g1:ras(GSI+"gazo1/{z}/{x}/{y}.jpg",17,ATTR,10),
+  swale:ras(GSI+"swale/{z}/{x}/{y}.png",16,ATTR,10), lfc:ras(GSI+"lcmfc2/{z}/{x}/{y}.png",16,ATTR,11),
+  flood:ras(HZ+"01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png",17,ATTR_HZ)
+};
+const MODES={
+  meiji:{name:"明治の低湿地",layers:[["pale",1],["swale",.85]]},
+  usa:{name:"1945〜50年",layers:[["pale",1],["usa",1]]},
+  old:{name:"1961〜69年",layers:[["pale",1],["old",1]]},
+  g1:{name:"1974〜78年",layers:[["pale",1],["g1",1]]},
+  lfc:{name:"地形の成り立ち",layers:[["pale",1],["lfc",.75]]},
+  flood:{name:"洪水の深さ（想定）",layers:[["pale",1],["flood",.8]]},
+  photo:{name:"いま",layers:[["photo",1]]},
+  std:{name:"いまの地図",layers:[["std",1]]}
+};
+const LEGEND={
+  meiji:SWALE.filter(s=>s[2]!=="dry").map(s=>[s[0],s[1]]),
+  flood:[[[247,245,169],"0.5m未満"],[[255,216,192],"0.5〜3m"],[[255,183,183],"3〜5m"],[[255,145,145],"5〜10m"],[[242,133,201],"10〜20m"],[[220,122,220],"20m以上"]]
+};
+function styleFor(mode){
+  const m=MODES[mode],sources={},layers=[];
+  m.layers.forEach(([k,op])=>{sources[k]=BASE[k];layers.push({id:k,type:"raster",source:k,paint:{"raster-opacity":op,"raster-fade-duration":0}})});
+  return {version:8,sources,layers};
+}
+let mapL,mapR,pin=null,syncing=false,track=null;
+function initMaps(){
+  const opt={center:[139.767,35.681],zoom:12,minZoom:5,maxZoom:18,attributionControl:{compact:true},dragRotate:false,pitchWithRotate:false,touchPitch:false};
+  mapL=new maplibregl.Map({container:"mapL",style:styleFor($("#selL").value),...opt});
+  mapR=new maplibregl.Map({container:"mapR",style:styleFor($("#selR").value),...opt});
+  mapR.addControl(new maplibregl.NavigationControl({showCompass:false}),"bottom-right");
+  const sync=(a,b)=>a.on("move",()=>{if(syncing)return;syncing=true;b.jumpTo({center:a.getCenter(),zoom:a.getZoom()});syncing=false});
+  sync(mapL,mapR);sync(mapR,mapL);
+  [mapL,mapR].forEach(m=>{
+    m.on("click",e=>lookup(e.lngLat.lat,e.lngLat.lng));
+    m.on("style.load",()=>drawTrack(m));
+    m.getCanvas().style.cursor="crosshair";
+  });
+  labels();
+  // スワイプ
+  const sw=$("#swipe"),bar=$("#bar"),knob=$("#knob");let drag=false;
+  const setX=cx=>{const r=sw.getBoundingClientRect(),p=Math.max(0,Math.min(1,(cx-r.left)/r.width));bar.style.left=(p*100)+"%";$("#mapR").style.clipPath=`inset(0 0 0 ${p*100}%)`};
+  knob.addEventListener("pointerdown",e=>{drag=true;knob.setPointerCapture(e.pointerId);e.preventDefault()});
+  knob.addEventListener("pointermove",e=>{if(drag)setX(e.clientX)});
+  knob.addEventListener("pointerup",()=>drag=false);knob.addEventListener("pointercancel",()=>drag=false);
+}
+function labels(){
+  $("#lblL").textContent=MODES[$("#selL").value].name;$("#lblR").textContent=MODES[$("#selR").value].name;
+  const lg=LEGEND[$("#selL").value];
+  $("#legend").innerHTML=lg?lg.map(([c,t])=>`<span><i style="background:rgb(${c})"></i>${esc(t)}</span>`).join(""):
+    ($("#selL").value==="lfc"?"色の意味は地理院地図の「治水地形分類図」の凡例をご覧ください（青い帯＝旧河道、赤＝盛土地など）。":"空中写真がない場所は、薄い地図だけが見えます。");
+}
+function flyAll(lat,lon,z){if(!mapR)return;mapR.jumpTo({center:[lon,lat],zoom:z})}
+function setPin(lat,lon){
+  [mapL,mapR].forEach((m,i)=>{
+    if(!pin)pin=[];if(pin[i])pin[i].remove();
+    const el=document.createElement("div");el.style.cssText="width:26px;height:26px;border:3px solid #c4321a;border-radius:50%;box-shadow:0 0 0 2px #fff";
+    pin[i]=new maplibregl.Marker({element:el}).setLngLat([lon,lat]).addTo(m);
+  });
+}
+
+/* ---------- 散歩ログ ---------- */
+function parseTrack(text,name){
+  const pts=[];
+  if(/\.(geo)?json$/i.test(name)||text.trim().startsWith("{")){
+    const g=JSON.parse(text),walk=(geom)=>{if(!geom)return;const t=geom.type,c=geom.coordinates;
+      if(t==="LineString")c.forEach(p=>pts.push([p[0],p[1]]));else if(t==="MultiLineString")c.forEach(l=>l.forEach(p=>pts.push([p[0],p[1]])));
+      else if(t==="Point")pts.push([c[0],c[1]]);else if(t==="GeometryCollection")geom.geometries.forEach(walk)};
+    (g.features||[g]).forEach(f=>walk(f.geometry||f));
+  }else{
+    const x=new DOMParser().parseFromString(text,"application/xml");
+    x.querySelectorAll("trkpt,rtept,wpt").forEach(p=>pts.push([+p.getAttribute("lon"),+p.getAttribute("lat")]));
+    if(!pts.length)x.querySelectorAll("coordinates").forEach(c=>c.textContent.trim().split(/\s+/).forEach(s=>{const [lo,la]=s.split(",").map(Number);if(isFinite(lo)&&isFinite(la))pts.push([lo,la])}));
+  }
+  return pts.filter(p=>isFinite(p[0])&&isFinite(p[1])&&Math.abs(p[1])<=90);
+}
+function dist(a,b){const R=6371000,r=Math.PI/180,dl=(b[1]-a[1])*r,dn=(b[0]-a[0])*r,x=Math.sin(dl/2)**2+Math.cos(a[1]*r)*Math.cos(b[1]*r)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(x))}
+const WALKCLS={water:["水の上",[147,200,254]],paddy:["田んぼ",[230,210,80]],marsh:["湿地",[140,140,200]],tidal:["干潟",[120,180,230]],salt:["塩田",[200,200,170]],dry:["乾いた土地（草地・荒地など）",[160,190,130]],none:["記録なし",[200,195,180]]};
+async function analyzeTrack(pts){
+  const res=$("#walkres");
+  let total=0;const seg=[];for(let i=1;i<pts.length;i++){const d=dist(pts[i-1],pts[i]);total+=d;seg.push(d)}
+  if(pts.length<2){res.textContent="線として読めるデータが見つかりませんでした。";return}
+  // 25mごとに、最大600点まで
+  const step=Math.max(25,total/600),samples=[];let acc=0,next=0;
+  for(let i=1;i<pts.length;i++){const a=pts[i-1],b=pts[i],d=seg[i-1];while(next<=acc+d){const t=d?(next-acc)/d:0;samples.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]);next+=step}acc+=d}
+  res.textContent=`${(total/1000).toFixed(2)} km を明治の地図と照らし合わせています…`;
+  const cls=await Promise.all(samples.map(async p=>{const m=await pixelVote(`${GSI}swale/{z}/{x}/{y}.png`,p[1],p[0],14,SWALE,0);return m?m[2]:"none"}));
+  const cnt={};cls.forEach(c=>cnt[c]=(cnt[c]||0)+1);
+  const wet=["water","paddy","marsh","tidal","salt"].reduce((s,k)=>s+(cnt[k]||0),0),pct=k=>Math.round((cnt[k]||0)/cls.length*100);
+  const order=["water","paddy","marsh","tidal","salt","dry","none"].filter(k=>cnt[k]);
+  res.innerHTML=`<b style="font-family:var(--mincho);font-size:22px">歩いた ${(total/1000).toFixed(2)} km のうち、${Math.round(wet/cls.length*100)}% は明治のころ水か田んぼか湿地でした。</b>
+   <div class="bars">${order.map(k=>`<span style="width:${(cnt[k]/cls.length*100)}%;background:rgb(${WALKCLS[k][1]})" title="${WALKCLS[k][0]}"></span>`).join("")}</div>
+   <div class="legend">${order.map(k=>`<span><i style="background:rgb(${WALKCLS[k][1]})"></i>${WALKCLS[k][0]} ${pct(k)}%</span>`).join("")}</div>
+   <div class="note" style="font-size:13px;color:var(--sub);margin-top:6px">「記録なし」には、明治の低湿地データが整備されていない地域も含まれます。</div>`;
+  track={type:"FeatureCollection",features:[
+    {type:"Feature",properties:{},geometry:{type:"LineString",coordinates:pts}},
+    ...samples.map((p,i)=>({type:"Feature",properties:{c:`rgb(${WALKCLS[cls[i]][1]})`},geometry:{type:"Point",coordinates:p}}))]};
+  [mapL,mapR].forEach(drawTrack);
+  const b=pts.reduce((b,p)=>[Math.min(b[0],p[0]),Math.min(b[1],p[1]),Math.max(b[2],p[0]),Math.max(b[3],p[1])],[180,90,-180,-90]);
+  $("#selL").value="meiji";$("#selL").dispatchEvent(new Event("change"));
+  mapR.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:40,maxZoom:17,duration:0});
+  document.getElementById("compare").scrollIntoView({behavior:"smooth"});
+}
+function drawTrack(m){
+  if(!track||!m)return;
+  try{if(m.getSource("trk")){m.getSource("trk").setData(track);return}
+  m.addSource("trk",{type:"geojson",data:track});}catch(e){m.once("idle",()=>drawTrack(m));return}
+  m.addLayer({id:"trk-l",type:"line",source:"trk",filter:["==","$type","LineString"],paint:{"line-color":"#1b1a17","line-width":5,"line-opacity":.85}});
+  m.addLayer({id:"trk-p",type:"circle",source:"trk",filter:["==","$type","Point"],paint:{"circle-radius":3.5,"circle-color":["get","c"],"circle-stroke-color":"#1b1a17","circle-stroke-width":1}});
+}
+
+/* ---------- 共有用の画像 ---------- */
+const NOHEAD="）」』。、・ー";
+function wrapText(x,text,maxW){const out=[];let line="";for(const ch of text){if(x.measureText(line+ch).width>maxW&&line&&!NOHEAD.includes(ch)){out.push(line);line=ch}else line+=ch}if(line)out.push(line);return out}
+async function makeCard(){
+  const d=current;if(!d)return;
+  try{await Promise.all([document.fonts.load('800 60px "Shippori Mincho B1"'),document.fonts.load('700 24px "BIZ UDPGothic"')])}catch(e){}
+  const W=1200,H=630,c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
+  const M='"Shippori Mincho B1","Hiragino Mincho ProN",serif',G='"BIZ UDPGothic","Hiragino Sans",sans-serif',INK="#1b1a17",SHU="#c4321a";
+  x.fillStyle="#f2eee3";x.fillRect(0,0,W,H);
+  x.strokeStyle=INK;x.lineWidth=3;x.strokeRect(24,24,W-48,H-48);x.lineWidth=1;x.strokeRect(32,32,W-64,H-64);
+  // 写真
+  const px=W-64-330,py=84,pw=300,ph=375;
+  if(d.photo){x.drawImage(d.photo,px,py,pw,ph)}else{x.fillStyle="#ddd8ca";x.fillRect(px,py,pw,ph);x.fillStyle="#5d5a52";x.font=`20px ${G}`;x.textAlign="center";x.fillText("古い写真なし",px+pw/2,py+ph/2);x.textAlign="left"}
+  x.strokeStyle=INK;x.lineWidth=2;x.strokeRect(px,py,pw,ph);
+  x.fillStyle="#5d5a52";x.font=`16px ${G}`;x.fillText(d.photo?(d.photoCap+"（国土地理院）"):"",px,py+ph+26);
+  // 見出し
+  x.fillStyle=INK;x.font=`800 30px ${M}`;x.fillText("前　歴　書",70,96);
+  x.font=`16px ${G}`;x.fillStyle="#5d5a52";x.fillText(wareki(new Date()),250,94);
+  x.fillStyle=INK;x.font=`800 38px ${M}`;
+  wrapText(x,d.label,px-110).slice(0,2).forEach((l,i)=>x.fillText(l,70,160+i*46));
+  const top=d.label.length>16?250:210;
+  x.font=`800 40px ${M}`;x.fillText(d.v.head?"ここは昔から":"ここは昔、",70,top+20);
+  x.fillStyle=SHU;let fs=76,lines;
+  for(fs of [76,68,60,54]){x.font=`800 ${fs}px ${M}`;lines=wrapText(x,(d.v.word||"記録なし")+"。",px-100);if(lines.length<=2&&lines.every(l=>x.measureText(l).width<=px-80))break}
+  lines=lines.slice(0,2);lines.forEach((l,i)=>x.fillText(l,70,top+fs+32+i*(fs+10)));
+  // データ
+  let y=top+fs+32+lines.length*(fs+10)+12;x.fillStyle=INK;x.font=`700 22px ${G}`;
+  const facts=[];if(d.elev!=null)facts.push(`海抜 ${d.elev.toFixed(1)}m`);
+  if(d.swale)facts.push(`明治：${d.swale[1]}`);if(d.flood)facts.push(`洪水想定 ${d.flood[1]}`);
+  wrapText(x,facts.join("　／　"),px-110).slice(0,2).forEach((l,i)=>x.fillText(l,70,Math.min(y+i*32,H-110)));
+  // 判子
+  const sx=px+pw-46,sy=py+ph-70,r=70,col=d.v.calm?"#2c4f83":SHU;
+  x.save();x.translate(sx,sy);x.rotate(-0.21);x.globalAlpha=.9;x.strokeStyle=col;x.fillStyle=col;
+  x.lineWidth=5;x.beginPath();x.arc(0,0,r,0,7);x.stroke();x.lineWidth=2;x.beginPath();x.arc(0,0,r-9,0,7);x.stroke();
+  x.textAlign="center";x.font=`800 16px ${M}`;x.fillText("前 歴",0,-26);x.fillRect(-30,-20,60,2);
+  x.font=`800 ${d.v.stamp.length>=3?30:40}px ${M}`;x.fillText(d.v.stamp,0,26);x.restore();
+  // フッター
+  x.fillStyle=INK;x.fillRect(32,H-82,W-64,50);x.fillStyle="#f2eee3";x.font=`700 22px ${G}`;
+  x.fillText("土地の前歴 ― 住所を入れると、その土地の昔が出ます",56,H-49);
+  x.textAlign="right";x.font=`20px ${G}`;x.fillText("@arai_sarai_data",W-56,H-49);x.textAlign="left";
+  const url=c.toDataURL("image/png");$("#cardImg").src=url;$("#cardSave").href=url;$("#cardSave").download=`前歴_${d.label}.png`;
+  $("#modal").classList.add("on");
+}
+$("#makeCard").addEventListener("click",makeCard);
+$("#cardClose").addEventListener("click",()=>$("#modal").classList.remove("on"));
+$("#modal").addEventListener("click",e=>{if(e.target.id==="modal")$("#modal").classList.remove("on")});
+
+/* ---------- 起動 ---------- */
+async function search(q){
+  q=q.trim();if(!q)return;status("住所をさがしています…");
+  try{const g=await geocode(q);if(!g){status("見つかりませんでした。市区町村名から入れてみてください。");return}
+    let label=null;const rg=await revgeo(g.lat,g.lon);
+    label=rg||townOf(g.title);
+    await lookup(g.lat,g.lon,label);
+  }catch(e){status("通信に失敗しました。少し待ってからもう一度お試しください。");console.error(e)}
+}
+$("#qform").addEventListener("submit",e=>{e.preventDefault();$("#q").blur();search($("#q").value)});
+document.querySelectorAll(".eg button").forEach(b=>b.addEventListener("click",()=>{$("#q").value=b.dataset.q;search(b.dataset.q)}));
+$("#copyLink").addEventListener("click",async()=>{if(!current)return;try{await navigator.clipboard.writeText(shareURL(current.label));toast("リンクをコピーしました")}catch(e){toast("コピーできませんでした")}});
+$("#goCompare").addEventListener("click",()=>$("#compare").scrollIntoView({behavior:"smooth"}));
+document.addEventListener("click",e=>{const a=e.target.closest("[data-era]");if(!a)return;e.preventDefault();$("#selL").value=a.dataset.era;$("#selL").dispatchEvent(new Event("change"));$("#compare").scrollIntoView({behavior:"smooth"})});
+$("#selL").addEventListener("change",()=>{mapL.setStyle(styleFor($("#selL").value));mapL.once("idle",()=>drawTrack(mapL));labels()});
+$("#selR").addEventListener("change",()=>{mapR.setStyle(styleFor($("#selR").value));mapR.once("idle",()=>drawTrack(mapR));labels()});
+const drop=$("#drop"),file=$("#file");
+const readFile=f=>{if(!f)return;const r=new FileReader();r.onload=()=>{try{analyzeTrack(parseTrack(r.result,f.name))}catch(e){$("#walkres").textContent="このファイルは読めませんでした。GPX・GeoJSON・KMLに対応しています。"}};r.readAsText(f)};
+file.addEventListener("change",()=>readFile(file.files[0]));
+["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("hover")}));
+["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("hover")}));
+drop.addEventListener("drop",e=>readFile(e.dataTransfer.files[0]));
+
+initMaps();
+const qa=new URLSearchParams(location.search).get("a");
+if(qa){$("#q").value=qa;search(qa)}
+</script>
+</body>
+</html>
