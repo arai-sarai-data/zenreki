@@ -7,7 +7,7 @@
    "updated": "2026-11-22",
    "total": 2500,
    "wetPct": 43,
-   "seaPct": 6
+   "seaPct": 5
   },
   "municipality": {
    "title": "市区町村の役所",
@@ -15,7 +15,7 @@
    "updated": "2026-11-22",
    "total": 1713,
    "wetPct": 26,
-   "seaPct": 5
+   "seaPct": 4
   },
   "mall": {
    "title": "ショッピングモール",
@@ -23,7 +23,7 @@
    "updated": "2026-11-22",
    "total": 1397,
    "wetPct": 49,
-   "seaPct": 13
+   "seaPct": 12
   },
   "univ": {
    "title": "大学",
@@ -31,7 +31,7 @@
    "updated": "2026-11-22",
    "total": 670,
    "wetPct": 34,
-   "seaPct": 7
+   "seaPct": 6
   },
   "castle": {
    "title": "城",
@@ -39,7 +39,7 @@
    "updated": "2026-11-22",
    "total": 1290,
    "wetPct": 9,
-   "seaPct": 2
+   "seaPct": 1
   },
   "stadium": {
    "title": "スタジアム・球場",
@@ -47,7 +47,7 @@
    "updated": "2026-11-22",
    "total": 549,
    "wetPct": 34,
-   "seaPct": 13
+   "seaPct": 12
   },
   "leisure": {
    "title": "空港・テーマパーク・動物園",
@@ -55,22 +55,22 @@
    "updated": "2026-11-22",
    "total": 458,
    "wetPct": 22,
-   "seaPct": 12
+   "seaPct": 10
   },
   "shrine": {
    "title": "有名な神社",
    "lead": "全国の有名な神社",
    "updated": "2026-11-22",
-   "total": 1498,
+   "total": 1499,
    "wetPct": 13,
-   "seaPct": 3
+   "seaPct": 1
   },
   "temple": {
    "title": "有名な寺",
    "lead": "全国の有名な寺",
    "updated": "2026-11-22",
    "total": 1500,
-   "wetPct": 8,
+   "wetPct": 7,
    "seaPct": 1
   }
  },
