@@ -839,7 +839,7 @@ $("#modal").addEventListener("click",e=>{if(e.target.id==="modal")$("#modal").cl
 
 // ---------- 前歴ランキング ----------
 const RANK_BASE=window.RANK_BASE||"rankings/";
-const SEA_S=new Set(["水底","干拓","旧河道","水面","干潟"]),WET_S=new Set([...SEA_S,"田圃","湿地","塩田"]);
+const SEA_S=new Set(["水底","干拓","旧河道","干潟"]),WET_S=new Set([...SEA_S,"水面","田圃","湿地","塩田"]);
 let RIDX=null,PLIST=new Set();
 async function initRank(){
   try{PLIST=new Set(await (await fetch("p/list.json",{cache:"no-cache"})).json())}catch(e){}
@@ -864,7 +864,7 @@ async function showRank(k){
   $("#pmapw").innerHTML=prefMap(s.byPref||{});
   const L=[
     ["元・水の底","埋め立て・干拓・旧河道など",it.filter(x=>SEA_S.has(x.s)).sort(fame),x=>x.w],
-    ["元・田んぼ・湿地","明治の地図で田・湿地",it.filter(x=>WET_S.has(x.s)&&!SEA_S.has(x.s)).sort(fame),x=>x.m||x.w],
+    ["元・田んぼ・湿地・水辺","明治の地図で田・湿地・川や池",it.filter(x=>WET_S.has(x.s)&&!SEA_S.has(x.s)).sort(fame),x=>x.m||x.w],
     ["海抜が低い","いまの標高",it.filter(x=>x.e!=null).sort((a,b)=>a.e-b.e),x=>"海抜 "+x.e.toFixed(1)+"m"],
     ["洪水で深く浸かる","想定最大規模",it.filter(x=>x.f>=0).sort((a,b)=>b.f-a.f||(a.e??99)-(b.e??99)),x=>x.fl],
     ["昔から台地","地盤が強い側",it.filter(x=>x.s==="台地").sort(fame),x=>"海抜 "+(x.e==null?"?":x.e.toFixed(1)+"m")]
