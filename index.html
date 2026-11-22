@@ -168,6 +168,25 @@ footer p{margin:0 0 8px}
 .quiz .qbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .quiz .qbar button,.quiz .qbar a{font:inherit;font-size:14px;font-weight:700;padding:8px 14px;border:2px solid var(--ink);background:var(--ink);color:#fff;text-decoration:none;cursor:pointer}
 @media (max-width:640px){.quiz{grid-template-columns:1fr}}
+.season{display:inline-block;margin:0 0 16px;background:var(--ink);color:#fff;font-weight:700;font-size:14px;padding:4px 12px}
+.season:empty{display:none}
+.pmap{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:3px;max-width:620px;margin:0 0 6px}
+.pmap div{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;line-height:1.15;border:1px solid rgba(0,0,0,.12)}
+.pmap small{font-size:10px}
+.pcap{margin:0 0 18px!important}
+.bform{display:flex;flex-wrap:wrap;gap:8px;align-items:center;max-width:760px}
+.bform input{flex:1 1 200px;min-width:0;border:2px solid var(--ink);padding:10px 12px;font:inherit;font-size:16px;background:#fff;outline:none}
+.bform span{font-family:var(--mincho);font-weight:800;font-size:22px}
+.bform button{border:0;background:var(--ink);color:#fff;font:inherit;font-weight:700;padding:12px 20px;cursor:pointer;letter-spacing:.2em}
+.bgrid{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:stretch;margin-top:16px}
+.bcard{background:var(--card);border:2px solid var(--ink);padding:12px 14px}
+.bcard .bn{font-size:13px;color:var(--sub)}
+.bcard .bw{font-family:var(--mincho);font-weight:800;font-size:26px;color:var(--shu);line-height:1.3;margin:2px 0 6px}
+.bcard ul{margin:0;padding-left:1.1em;font-size:14px}
+.bvs{align-self:center;font-family:var(--mincho);font-weight:800;font-size:30px}
+.bverdict{font-family:var(--mincho);font-weight:800;font-size:24px;margin:14px 0 0}
+.bverdict b{color:var(--shu)}
+@media (max-width:640px){.bgrid{grid-template-columns:1fr}.bvs{text-align:center}.pmap div{font-size:9px}.pmap small{font-size:8px}}
 .modal{position:fixed;inset:0;background:rgba(27,26,23,.72);display:none;align-items:center;justify-content:center;z-index:60;padding:16px}
 .modal.on{display:flex}
 .modal .box{background:var(--paper);border:2px solid var(--ink);max-width:760px;width:100%;padding:14px}
@@ -201,6 +220,7 @@ footer p{margin:0 0 8px}
   <section class="hero">
     <h1>その土地、<br><em>前</em>は何だった？</h1>
     <p class="lead">住所を入れると、明治の地図、終戦直後の空中写真、国の地形調査、浸水や土砂災害の想定から、その場所の「前歴」を一枚にまとめます。</p>
+    <p class="season" id="season"></p>
     <form class="q" id="qform" autocomplete="off">
       <input id="q" type="search" placeholder="例：東京都江東区豊洲2丁目 / 渋谷駅" aria-label="住所・駅名">
       <button type="submit">調べる</button>
@@ -248,6 +268,7 @@ footer p{margin:0 0 8px}
     <p class="d">毎月1日に、新しいお題で全国を調べ直しています。<span id="rnext"></span>名前を押すと、その場所の前歴書が出ます。</p>
     <div class="rtabs" id="rtabs"></div>
     <div class="rhead" id="rhead"></div>
+    <div id="pmapw"></div>
     <div class="rgrid" id="rgrid"></div>
     <div class="share"><a id="rshare" href="#" target="_blank" rel="noopener">このランキングをポスト</a></div>
     <p class="d">場所はWikidataから、有名な順（Wikipediaの記事がある言語の数）に選んでいます。判定はこのサイトの前歴書と同じく、国土地理院とハザードマップポータルのデータによります。</p>
@@ -265,6 +286,15 @@ footer p{margin:0 0 8px}
         <div class="qbar"><button type="button" id="qnext">次の問題</button><a id="qshare" href="#" target="_blank" rel="noopener">成績をポスト</a></div>
       </div>
     </div>
+  </section>
+
+  <section class="blk" id="battle">
+    <h3>前歴バトル</h3>
+    <p class="d">2つの住所や駅を入れて、どちらの土地の前歴が重いかを比べます。実家と今の家、推しの駅と地元の駅などで。</p>
+    <form class="bform" id="bform" autocomplete="off">
+      <input id="bA" type="search" placeholder="1つめ（例：渋谷駅）" aria-label="1つめ"><span>対</span><input id="bB" type="search" placeholder="2つめ（例：千葉県浦安市舞浜）" aria-label="2つめ"><button type="submit">比べる</button>
+    </form>
+    <div id="bres"></div>
   </section>
 
   <section class="blk" id="compare">
@@ -488,10 +518,20 @@ function judge(d){
 
 /* ---------- 調べる ---------- */
 let current=null,seq=0;
-async function lookup(lat,lon,hintLabel){
+async function lookup(lat,lon,hintLabel,meta){
   const my=++seq;
   status("調べています…");
-  const [label,elev,swale,lf1,lf2,flood,tide,tsunami,kyu,dos,jis]=await Promise.all([
+  const d=await inspect(lat,lon,hintLabel);
+  if(my!==seq)return;
+  d.qid=meta&&meta.qid||null;d.named=!!(meta&&(meta.named||meta.qid));
+  current=d;
+  render(d);status("");
+  oldPhoto(lat,lon,my);
+  commons(lat,lon,my);
+  flyAll(lat,lon,16);setPin(lat,lon);
+}
+async function inspect(lat,lon,hintLabel){
+  const [label,elev,swale,lf1,lf2,flood,tide,tsunami,kyu,dos,jis,loreHit]=await Promise.all([
     hintLabel?Promise.resolve(hintLabel):revgeo(lat,lon),
     elevation(lat,lon),
     pixelVote(`${GSI}swale/{z}/{x}/{y}.png`,lat,lon,14,SWALE),
@@ -501,15 +541,20 @@ async function lookup(lat,lon,hintLabel){
     pixelVote(`${HZ}04_tsunami_newlegend_data/{z}/{x}/{y}.png`,lat,lon,16,DEPTH,1),
     anyPixel(`${HZ}05_kyukeishakeikaikuiki/{z}/{x}/{y}.png`,lat,lon,16),
     anyPixel(`${HZ}05_dosekiryukeikaikuiki/{z}/{x}/{y}.png`,lat,lon,16),
-    anyPixel(`${HZ}05_jisuberikeikaikuiki/{z}/{x}/{y}.png`,lat,lon,16)
+    anyPixel(`${HZ}05_jisuberikeikaikuiki/{z}/{x}/{y}.png`,lat,lon,16),
+    lore(lat,lon)
   ]);
-  if(my!==seq)return;
-  const d={lat,lon,label:label||"（地名不明）",elev,swale,lf1,lf2,flood,tide,tsunami,dosha:[kyu&&"急傾斜地",dos&&"土石流",jis&&"地すべり"].filter(Boolean)};
-  d.v=judge(d);current=d;
-  render(d);status("");
-  oldPhoto(lat,lon,my);
-  commons(lat,lon,my);
-  flyAll(lat,lon,16);setPin(lat,lon);
+  const d={lat,lon,label:label||"（地名不明）",elev,swale,lf1,lf2,flood,tide,tsunami,dosha:[kyu&&"急傾斜地",dos&&"土石流",jis&&"地すべり"].filter(Boolean),lore:loreHit};
+  d.v=judge(d);
+  return d;
+}
+async function lore(lat,lon){
+  const z=7,[fx,fy]=tileXY(lat,lon,z);
+  const g=await getJSON(`${GSI}disaster_lore_all/${z}/${Math.floor(fx)}/${Math.floor(fy)}.geojson`);
+  if(!g||!g.features)return null;
+  let best=null,bd=3000;
+  for(const f of g.features){const c=f.geometry&&f.geometry.coordinates;if(!c)continue;const dd=dist([lon,lat],[c[0],c[1]]);if(dd<bd){bd=dd;best=f.properties}}
+  return best?{...best,dist:bd}:null;
 }
 
 function render(d){
@@ -545,21 +590,30 @@ function render(d){
   rows.push(hz("洪水",d.flood));rows.push(hz("高潮",d.tide));rows.push(hz("津波",d.tsunami));
   rows.push(row("土砂災害","警戒区域",d.dosha.length?`<span class="tag red">区域内</span><span class="what">${d.dosha.join("・")}</span>`:`<span class="tag ok">区域外</span>`,
     d.dosha.length?"都道府県が指定した土砂災害警戒区域に入っています。":"指定された区域には入っていません。"));
+  if(d.lore){const L=d.lore,info=String(L.DisasterInfo||"");
+    rows.push(row("伝承碑",(L.dist/1000).toFixed(1)+"km先",`<span class="what">${esc(L.LoreName||"")}</span>（${esc(String(L.DisasterName||"").replace(/<br>/g," "))}）`,
+      esc(info.slice(0,140))+(info.length>140?"…":"")+`<br><small>${esc(L.Address||"")}／国土地理院「自然災害伝承碑」より</small>`));}
   $("#sHist").innerHTML=rows.join("");
   const memo=(d.lf2&&d.lf2.r)||(d.lf1&&d.lf1.r)||"";
   $("#sMemo").textContent=memo||"この場所には地形分類の解説がありません。";
   // share
-  const url=shareURL(d.label);
+  const url=shareFor(d);
   const bits=[`【${SITE_TAG}】${d.label}`,d.v.word?`前歴は「${d.v.word}」`:"前歴は記録なし"];
   if(d.elev!=null)bits.push(`海抜${d.elev.toFixed(1)}m`);
   if(d.flood)bits.push(`洪水で${d.flood[1]}`);
   $("#shareX").href="https://x.com/intent/post?text="+encodeURIComponent(bits.join("／")+"\n")+"&url="+encodeURIComponent(url)+"&hashtags="+encodeURIComponent(SITE_TAG);
-  history.replaceState(null,"","?a="+encodeURIComponent(d.label));
+  history.replaceState(null,"",d.named?"?ll="+d.lat.toFixed(5)+","+d.lon.toFixed(5)+"&n="+encodeURIComponent(d.label):"?a="+encodeURIComponent(d.label));
   document.title=`${d.label}の前歴：${d.v.word||"記録なし"} | 土地の前歴`;
   requestAnimationFrame(()=>$("#result").scrollIntoView({behavior:"smooth",block:"start"}));
 }
 function row(a,b,what,note){return `<tr><td class="when">${a}<small>${b}</small></td><td>${what}${note?`<div class="note">${note}</div>`:""}</td></tr>`}
 function shareURL(label){return location.origin+location.pathname+"?a="+encodeURIComponent(label)}
+function shareFor(d){
+  const b=location.origin+location.pathname;
+  if(d.qid&&PLIST.has(d.qid))return b+"p/"+d.qid+".html";
+  if(d.named)return b+"?ll="+d.lat.toFixed(5)+","+d.lon.toFixed(5)+"&n="+encodeURIComponent(d.label);
+  return b+"?a="+encodeURIComponent(d.label);
+}
 
 /* 証明写真：その場所の古い空中写真を切り出す */
 async function oldPhoto(lat,lon,my){
@@ -775,8 +829,9 @@ $("#modal").addEventListener("click",e=>{if(e.target.id==="modal")$("#modal").cl
 // ---------- 前歴ランキング ----------
 const RANK_BASE=window.RANK_BASE||"rankings/";
 const SEA_S=new Set(["水底","干拓","旧河道","水面","干潟"]),WET_S=new Set([...SEA_S,"田圃","湿地","塩田"]);
-let RIDX=null;
+let RIDX=null,PLIST=new Set();
 async function initRank(){
+  try{PLIST=new Set(await (await fetch("p/list.json",{cache:"no-cache"})).json())}catch(e){}
   try{RIDX=await (await fetch(RANK_BASE+"index.json",{cache:"no-cache"})).json()}catch(e){return}
   if(!RIDX||!RIDX.order||!RIDX.order.length)return;
   $("#rank").hidden=false;
@@ -795,6 +850,7 @@ async function showRank(k){
   $("#rupd").textContent=d.updated.replace(/-/g,".")+" 更新";
   $("#rhead").innerHTML=`<div class="big">${esc(d.lead)} <b>${s.known.toLocaleString()}</b> か所のうち、<br><em>${s.wetPct}%</em> は明治のころ<em>水・田んぼ・湿地</em>でした。</div>
     <div class="sub"><span>元・水の底 <b>${s.sea}</b></span><span>海抜0m以下 <b>${s.below0}</b></span><span>洪水で3m以上浸かる想定 <b>${s.flood3}</b></span></div>`;
+  $("#pmapw").innerHTML=prefMap(s.byPref||{});
   const L=[
     ["元・水の底","埋め立て・干拓・旧河道など",it.filter(x=>SEA_S.has(x.s)).sort(fame),x=>x.w],
     ["元・田んぼ・湿地","明治の地図で田・湿地",it.filter(x=>WET_S.has(x.s)&&!SEA_S.has(x.s)).sort(fame),x=>x.m||x.w],
@@ -805,7 +861,7 @@ async function showRank(k){
   const nc=nameCheck(it);
   L.push(["名前は水っぽいのに高台","沼・池・谷・島・田などの字があるのに",nc.liar,x=>x.w||x.s],["名前は普通なのに元・水の底","地名に水の字がないのに",nc.hidden,x=>x.w]);
   const prefs=Object.entries(s.byPref||{}).filter(([p,b])=>b.n>=5).map(([p,b])=>({p,pct:Math.round(b.wet/b.n*100),n:b.n})).sort((a,b)=>b.pct-a.pct);
-  const li=(x,j,f)=>`<li${j>=10?' class="x"':""}><button type="button" data-la="${x.la}" data-lo="${x.lo}">${esc(x.n)}</button><small>${esc((x.p||"")+(x.c||""))}　${esc(f(x)||"")}</small></li>`;
+  const li=(x,j,f)=>`<li${j>=10?' class="x"':""}><button type="button" data-la="${x.la}" data-lo="${x.lo}" data-q="${esc(x.q||"")}" data-n="${esc(x.n)}">${esc(x.n)}</button><small>${esc((x.p||"")+(x.c||""))}　${esc(f(x)||"")}</small></li>`;
   $("#rgrid").innerHTML=L.filter(l=>l[2].length).map(([t,sub,arr,f])=>`<div class="rcol"><h4>${t}<small>${sub}</small></h4><ol>${arr.slice(0,30).map((x,j)=>li(x,j,f)).join("")}</ol>${arr.length>10?'<button type="button" class="more">もっと見る</button>':""}</div>`).join("")
     +(prefs.length?`<div class="rcol"><h4>都道府県別<small>水・田・湿地だった割合</small></h4><ol>${prefs.slice(0,15).map(x=>`<li><b>${esc(x.p)}</b><small>${x.pct}%（${x.n}か所中）</small><span class="pb"><i style="width:${x.pct}%"></i></span></li>`).join("")}</ol></div>`:"");
   initQuiz(it,k);
@@ -815,7 +871,7 @@ async function showRank(k){
 }
 document.addEventListener("click",e=>{
   const m=e.target.closest(".rcol .more");if(m){m.previousElementSibling.classList.add("all");m.remove();return}
-  const b=e.target.closest(".rcol button[data-la]");if(b)lookup(+b.dataset.la,+b.dataset.lo);
+  const b=e.target.closest(".rcol button[data-la]");if(b)lookup(+b.dataset.la,+b.dataset.lo,b.dataset.n,{qid:b.dataset.q});
 });
 
 // ---------- 1945年クイズ ----------
@@ -873,7 +929,7 @@ function answerQuiz(i){
 document.addEventListener("click",e=>{
   const b=e.target.closest("#qc button");if(b){answerQuiz(+b.dataset.i);return}
   if(e.target.closest("#qnext")){nextQuiz();return}
-  if(e.target.closest("[data-goto]")&&QZ.cur){lookup(QZ.cur.a.la,QZ.cur.a.lo)}
+  if(e.target.closest("[data-goto]")&&QZ.cur){lookup(QZ.cur.a.la,QZ.cur.a.lo,QZ.cur.a.n,{qid:QZ.cur.a.q})}
 });
 // ---------- 地名の答え合わせ ----------
 const WATERK=/[沼池窪谷島洲浜田川沢潟江津湊浦堀瀬]/;
@@ -896,7 +952,7 @@ async function search(q){
 }
 $("#qform").addEventListener("submit",e=>{e.preventDefault();$("#q").blur();search($("#q").value)});
 document.querySelectorAll(".eg button").forEach(b=>b.addEventListener("click",()=>{$("#q").value=b.dataset.q;search(b.dataset.q)}));
-$("#copyLink").addEventListener("click",async()=>{if(!current)return;try{await navigator.clipboard.writeText(shareURL(current.label));toast("リンクをコピーしました")}catch(e){toast("コピーできませんでした")}});
+$("#copyLink").addEventListener("click",async()=>{if(!current)return;try{await navigator.clipboard.writeText(shareFor(current));toast("リンクをコピーしました")}catch(e){toast("コピーできませんでした")}});
 $("#goCompare").addEventListener("click",()=>$("#compare").scrollIntoView({behavior:"smooth"}));
 document.addEventListener("click",e=>{const a=e.target.closest("[data-era]");if(!a)return;e.preventDefault();$("#selL").value=a.dataset.era;$("#selL").dispatchEvent(new Event("change"));$("#compare").scrollIntoView({behavior:"smooth"})});
 $("#selL").addEventListener("change",()=>{mapL.setStyle(styleFor($("#selL").value));mapL.once("idle",()=>drawTrack(mapL));labels()});
@@ -908,10 +964,40 @@ file.addEventListener("change",()=>readFile(file.files[0]));
 ["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("hover")}));
 drop.addEventListener("drop",e=>readFile(e.dataTransfer.files[0]));
 
+// ---------- 都道府県の色分け（タイル地図） ----------
+const PGRID=[["北海道",12,0],["青森県",12,1],["秋田県",11,2],["岩手県",12,2],["山形県",11,3],["宮城県",12,3],["石川県",8,4],["富山県",9,4],["新潟県",10,4],["福島県",11,4],["福井県",7,5],["岐阜県",8,5],["長野県",9,5],["群馬県",10,5],["栃木県",11,5],["茨城県",12,5],["島根県",3,6],["鳥取県",4,6],["兵庫県",5,6],["京都府",6,6],["滋賀県",7,6],["愛知県",8,6],["山梨県",9,6],["埼玉県",10,6],["東京都",11,6],["千葉県",12,6],["山口県",2,7],["広島県",3,7],["岡山県",4,7],["大阪府",5,7],["奈良県",6,7],["三重県",7,7],["静岡県",8,7],["神奈川県",9,7],["佐賀県",0,8],["福岡県",1,8],["愛媛県",3,8],["香川県",4,8],["和歌山県",6,8],["長崎県",0,9],["熊本県",1,9],["大分県",2,9],["高知県",3,9],["徳島県",4,9],["鹿児島県",1,10],["宮崎県",2,10],["沖縄県",0,11]];
+function prefMap(byPref){
+  const cells=PGRID.map(([p,x,y])=>{const b=byPref[p],ok=b&&b.n>=5,r=ok?b.wet/b.n:0,short=p==="北海道"?"北海道":p.replace(/[都府県]$/,"").slice(0,3);
+    return `<div style="grid-column:${x+1};grid-row:${y+1};background:${ok?`rgba(196,50,26,${(0.06+0.94*r).toFixed(2)})`:"#e6e0d0"};color:${ok&&r>0.5?"#fff":"var(--ink)"}" title="${p}：${ok?Math.round(r*100)+"%（"+b.n+"か所）":"件数が少ないため対象外"}"><b>${short.slice(0,2)}</b>${ok?`<small>${Math.round(r*100)}</small>`:""}</div>`}).join("");
+  return `<div class="pmap">${cells}</div><p class="d pcap">都道府県ごとに、明治のころ水・田・湿地だった割合（数字は%）。色が濃いほど高い。灰色は5か所未満。</p>`;
+}
+// ---------- 前歴バトル ----------
+const WEIGHT={"水底":10,"干拓":9,"旧河道":8,"水面":8,"干潟":8,"湿地":6,"田圃":5,"塩田":5,"地滑":4,"盛土":4,"低地":3,"谷":3,"砂州":2,"微高地":2,"扇状地":1,"切土":1,"斜面":1,"原野":1,"台地":0,"不詳":0};
+function weight(d){let w=WEIGHT[d.v.stamp]??0;if(d.flood)w+=d.flood[2]+1;if(d.elev!=null&&d.elev<=0)w+=2;if(d.dosha.length)w+=2;return w}
+async function battle(qa,qb){
+  $("#bres").innerHTML=`<p class="d" style="margin-top:12px">調べています…</p>`;
+  let g;
+  try{g=await Promise.all([qa,qb].map(async q=>{const r=await geocode(q);if(!r)return null;const lab=/駅$/.test(q)?q:(await revgeo(r.lat,r.lon)||townOf(r.title));return inspect(r.lat,r.lon,lab)}))}catch(e){g=[null]}
+  if(g.some(x=>!x)){$("#bres").innerHTML=`<p class="d" style="margin-top:12px">見つからない場所がありました。市区町村名から入れてみてください。</p>`;return}
+  const [A,B]=g,wa=weight(A),wb=weight(B),W=wa>wb?A:B;
+  const col=(d,w)=>`<div class="bcard"><div class="bn">${esc(d.label)}</div><div class="bw">${esc(d.v.word||"記録なし")}</div><ul><li>海抜 ${d.elev==null?"不明":d.elev.toFixed(1)+"m"}</li><li>明治：${esc(d.swale?d.swale[1]:"記録なし")}</li><li>洪水想定：${esc(d.flood?d.flood[1]:"なし")}</li><li>前歴の重さ <b>${w}</b></li></ul></div>`;
+  $("#bres").innerHTML=`<div class="bgrid">${col(A,wa)}<div class="bvs">対</div>${col(B,wb)}</div>
+    <p class="bverdict">${wa===wb?"引き分け。どちらも同じくらいの前歴です。":`前歴が重いのは<b>${esc(W.label)}</b>。`}</p>
+    <div class="share"><a id="bshare" target="_blank" rel="noopener" href="#">結果をポスト</a></div>
+    <p class="d">「前歴の重さ」は、昔の水との縁（海・川・田んぼ・湿地など）と、浸水想定・海抜・土砂災害警戒区域をもとにした、このサイト独自の目安です。</p>`;
+  const txt=`【前歴バトル】${A.label}（${A.v.word||"記録なし"}）対 ${B.label}（${B.v.word||"記録なし"}）\n→ ${wa===wb?"引き分け":W.label+"の前歴が重い"}\n`;
+  $("#bshare").href="https://x.com/intent/post?text="+encodeURIComponent(txt)+"&url="+encodeURIComponent(location.origin+location.pathname+"#battle")+"&hashtags="+encodeURIComponent(SITE_TAG);
+}
+$("#bform").addEventListener("submit",e=>{e.preventDefault();const a=$("#bA").value.trim(),b=$("#bB").value.trim();if(a&&b)battle(a,b)});
+// ---------- 季節の見出し ----------
+(()=>{const S={1:"帰省したら、実家の前歴を。",2:"引っ越しを考えているなら、候補地の前歴から。",3:"新生活の前に、新しい家の前歴を。",4:"新居の土地、昔は何だった？",5:"梅雨の前に、浸かる深さを確かめる。",6:"梅雨入り。あなたの家は浸かる想定？",7:"大雨の季節。川のそばの前歴を。",8:"台風が来る前に、家の前歴を。",9:"防災の日の月。家の前歴を見直す。",10:"台風の季節。低い土地はどこ？",11:"家探しのついでに、土地の前歴も。",12:"年末に帰省したら、実家の前歴を。"};$("#season").textContent=S[new Date().getMonth()+1]||""})();
+
 initMaps();
 initRank();
-const qa=new URLSearchParams(location.search).get("a");
-if(qa){$("#q").value=qa;search(qa)}
+const QP=new URLSearchParams(location.search),qa=QP.get("a"),qll=(QP.get("ll")||"").split(",").map(Number);
+if(qll.length===2&&qll.every(v=>isFinite(v)&&v!==0))lookup(qll[0],qll[1],QP.get("n")||null,{named:true});
+else if(qa){$("#q").value=qa;search(qa)}
+if(location.hash==="#battle")setTimeout(()=>$("#battle").scrollIntoView(),300);
 </script>
 </body>
 </html>
