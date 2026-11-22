@@ -14,7 +14,7 @@ for (const [p, n] of [["/usr/share/fonts/opentype/noto/NotoSerifCJK-Bold.ttc", "
   if (fs.existsSync(p)) GlobalFonts.registerFromPath(p, n); else console.warn("フォントがありません", p);
 }
 const M = "SerifJP", G = "SansJP", GR = "SansJPR", INK = "#1b1a17", SHU = "#c4321a", PAPER = "#f2eee3";
-const SEA = new Set(["水底", "干拓", "旧河道", "水面", "干潟"]), WET = new Set([...SEA, "田圃", "湿地", "塩田"]);
+const SEA = new Set(["水底", "干拓", "旧河道", "干潟"]), WET = new Set([...SEA, "水面", "田圃", "湿地", "塩田"]);
 const WATERK = /[沼池窪谷島洲浜田川沢潟江津湊浦堀瀬]/;
 const DEPTH_NOTE = ["床下くらい", "1階の床上〜軒下", "2階の床まで", "2階の屋根まで", "3〜5階まで", "ビル6階以上"];
 

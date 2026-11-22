@@ -24,7 +24,7 @@ const THEMES = [
   { key: "temple", title: "有名な寺", lead: "全国の有名な寺", cls: ["Q5393308"], limit: 1500 },
 ];
 const WET = new Set(["水底", "干拓", "旧河道", "水面", "干潟", "田圃", "湿地", "塩田"]);
-const SEA = new Set(["水底", "干拓", "旧河道", "水面", "干潟"]);
+const SEA = new Set(["水底", "干拓", "旧河道", "干潟"]);
 
 // ---- index.html から判定ルールを取り出す ----
 const html = fs.readFileSync(ROOT + "index.html", "utf8");
