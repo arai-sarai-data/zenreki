@@ -1,5 +1,5 @@
 {
- "latest": "temple",
+ "latest": "station",
  "themes": {
   "station": {
    "title": "駅",
@@ -21,7 +21,7 @@
    "title": "ショッピングモール",
    "lead": "全国のショッピングモール",
    "updated": "2026-11-22",
-   "total": 1396,
+   "total": 1397,
    "wetPct": 49,
    "seaPct": 13
   },
@@ -29,15 +29,15 @@
    "title": "大学",
    "lead": "全国の大学",
    "updated": "2026-11-22",
-   "total": 669,
-   "wetPct": 35,
+   "total": 670,
+   "wetPct": 34,
    "seaPct": 7
   },
   "castle": {
    "title": "城",
    "lead": "全国の城",
    "updated": "2026-11-22",
-   "total": 1286,
+   "total": 1290,
    "wetPct": 9,
    "seaPct": 2
   },
@@ -45,31 +45,31 @@
    "title": "スタジアム・球場",
    "lead": "全国のスタジアム・球場",
    "updated": "2026-11-22",
-   "total": 548,
-   "wetPct": 35,
+   "total": 549,
+   "wetPct": 34,
    "seaPct": 13
   },
   "leisure": {
    "title": "空港・テーマパーク・動物園",
    "lead": "全国の空港・テーマパーク・動物園",
    "updated": "2026-11-22",
-   "total": 454,
-   "wetPct": 24,
-   "seaPct": 14
+   "total": 458,
+   "wetPct": 22,
+   "seaPct": 12
   },
   "shrine": {
    "title": "有名な神社",
    "lead": "全国の有名な神社",
    "updated": "2026-11-22",
-   "total": 1497,
-   "wetPct": 12,
+   "total": 1498,
+   "wetPct": 13,
    "seaPct": 3
   },
   "temple": {
    "title": "有名な寺",
    "lead": "全国の有名な寺",
    "updated": "2026-11-22",
-   "total": 1498,
+   "total": 1500,
    "wetPct": 8,
    "seaPct": 1
   }
