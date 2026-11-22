@@ -1,0 +1,17 @@
+{
+ "latest": "station",
+ "themes": {
+  "station": {
+   "title": "駅",
+   "lead": "全国の有名な駅",
+   "updated": "2026-11-22",
+   "total": 2500,
+   "wetPct": 43,
+   "seaPct": 6
+  }
+ },
+ "order": [
+  "station"
+ ],
+ "next": "スタジアム・球場"
+}
