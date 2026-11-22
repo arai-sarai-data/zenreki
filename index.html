@@ -504,6 +504,7 @@ function townOf(title){ // 番地より細かい部分を落とす
 function judge(d){
   const s=d.swale&&d.swale[2], n=d.lf1&&d.lf1.k, a=d.lf2&&d.lf2.k, filled=a==="fill"||n==="fill";
   const R=(word,stamp,calm=false,head=null)=>({word,stamp,calm,head});
+  if(n==="water")return R("いまも池・川・海の上","水上",false,"ここは<b>いまも池・川・海の上</b>です。");
   if(n==="oldwater"||(s==="water"&&(filled||a==="reclaim")))return R(filled?"水の底（埋め立て地）":"水の底","水底");
   if(a==="reclaim"||n==="reclaim")return R("海か湖（干拓地）","干拓");
   if(n==="river")return R("川","旧河道");
@@ -983,7 +984,7 @@ function prefMap(byPref){
   return `<div class="pmap">${cells}</div><p class="d pcap">都道府県ごとに、明治のころ水・田・湿地だった割合（数字は%）。色が濃いほど高い。灰色は5か所未満。</p>`;
 }
 // ---------- 前歴バトル ----------
-const WEIGHT={"水底":10,"干拓":9,"旧河道":8,"水面":8,"干潟":8,"湿地":6,"田圃":5,"塩田":5,"地滑":4,"盛土":4,"低地":3,"谷":3,"砂州":2,"微高地":2,"扇状地":1,"切土":1,"斜面":1,"原野":1,"台地":0,"不詳":0};
+const WEIGHT={"水上":3,"水底":10,"干拓":9,"旧河道":8,"水面":8,"干潟":8,"湿地":6,"田圃":5,"塩田":5,"地滑":4,"盛土":4,"低地":3,"谷":3,"砂州":2,"微高地":2,"扇状地":1,"切土":1,"斜面":1,"原野":1,"台地":0,"不詳":0};
 function weight(d){let w=WEIGHT[d.v.stamp]??0;if(d.flood)w+=d.flood[2]+1;if(d.elev!=null&&d.elev<=0)w+=2;if(d.dosha.length)w+=2;return w}
 async function battle(qa,qb){
   $("#bres").innerHTML=`<p class="d" style="margin-top:12px">調べています…</p>`;
